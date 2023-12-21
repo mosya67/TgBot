@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34221.43
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TgBot", "TgBot\TgBot.csproj", "{0D917C39-BEEB-449A-9744-316985840526}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Services", "DatabaseAccess\Services.csproj", "{DE6222B6-F5E5-4C35-AED6-4EA93BD31826}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Database", "Database\Database.csproj", "{2DA28C96-8753-4C4C-BCCF-E27FC318DA4E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0D917C39-BEEB-449A-9744-316985840526}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D917C39-BEEB-449A-9744-316985840526}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D917C39-BEEB-449A-9744-316985840526}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D917C39-BEEB-449A-9744-316985840526}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE6222B6-F5E5-4C35-AED6-4EA93BD31826}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE6222B6-F5E5-4C35-AED6-4EA93BD31826}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE6222B6-F5E5-4C35-AED6-4EA93BD31826}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE6222B6-F5E5-4C35-AED6-4EA93BD31826}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DA28C96-8753-4C4C-BCCF-E27FC318DA4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DA28C96-8753-4C4C-BCCF-E27FC318DA4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DA28C96-8753-4C4C-BCCF-E27FC318DA4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DA28C96-8753-4C4C-BCCF-E27FC318DA4E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CF65D89E-E3FF-41F7-B51E-D67FF479BDD2}
+	EndGlobalSection
+EndGlobal
