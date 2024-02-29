@@ -1,7 +1,9 @@
 ﻿
 #nullable disable
 
-namespace Database
+using Database;
+
+namespace Database.Database.Model
 {
     public partial class Question
     {

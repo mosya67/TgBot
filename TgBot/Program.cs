@@ -13,19 +13,22 @@ using ExcelServices;
 using System.Net.Http;
 using System.Net;
 using System.IO;
+using Domain;
 
 namespace TelegramBot
 {
     internal partial class Program
     {
-        public static DbServices dbServices = new();
-        public static ExServices excelServices = new();
-        public static Dictionary<long, UserState> State = new();
+        static IExcelGenerator excel;
+        static Dictionary<long, UserState> State;
         const string token = "6185570726:AAHBPUqL-qMSrmod9YxV6ot3IKrJ3YXzzCc";
-        public static string[] _commands = {"/start", "/resetname"};
+        static string[] _commands = {"/start", "/resetname"};
 
         static void Main(string[] args)
         {
+            State = new Dictionary<long, UserState>();
+            excel = new ExcelGenerator();
+
             var proxy = new WebProxy
             {
                 //Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
@@ -65,7 +68,7 @@ namespace TelegramBot
             var id = message.Chat.Id;
             Console.WriteLine($"{message.Date} {message.From.Username} {message.From.Id}: {message.Text}");
             if (!State.ContainsKey(id))
-                State.Add(id, new());
+                State.Add(id, new UserState());
 
             if (message?.Text?.ToLower() == "/start")
             {
@@ -181,7 +184,7 @@ namespace TelegramBot
                 }
                 State[id].dto.ldate = date.Result;
 
-                var file = await excelServices.WriteResultsAsync(State[id].dto.fdate, State[id].dto.ldate);
+                var file = await excel.WriteResultsAsync(State[id].dto.fdate, State[id].dto.ldate);
                 if (file.Errors == null)
                 {
                     using (Stream str = System.IO.File.OpenRead(file.PathName))
@@ -298,7 +301,7 @@ namespace TelegramBot
             else if (query.Data == "SkipLastDate")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                var file = await excelServices.WriteResultsAsync(State[id].dto.fdate, State[id].dto.ldate);
+                var file = await excel.WriteResultsAsync(State[id].dto.fdate, State[id].dto.ldate);
                 if (file.Errors == null)
                 {
                     using (Stream str = System.IO.File.OpenRead(file.PathName))

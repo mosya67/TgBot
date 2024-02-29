@@ -1,16 +1,22 @@
-﻿using Database.EntityTypeConfig;
+﻿using Database.Database.Model;
+using Database.Database.EntityTypeConfig;
 using Microsoft.EntityFrameworkCore;
 
 #nullable disable
 
-namespace Database
+namespace Database.Database
 {
-    public partial class testdbContext : DbContext
+    public partial class Context : DbContext
     {
-        public testdbContext(){ Database.EnsureCreated(); }
+        public Context()
+        {
+#if DEBUG
+            Database.EnsureCreated();
+#endif
+        }
 
-        public testdbContext(DbContextOptions<testdbContext> options)
-            : base(options){}
+        public Context(DbContextOptions<Context> options)
+            : base(options) { }
 
         public virtual DbSet<Answer> Answers { get; set; }
         public virtual DbSet<Question> Questions { get; set; }

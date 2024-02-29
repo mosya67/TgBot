@@ -1,4 +1,4 @@
-﻿using Database;
+﻿using Database.Database.Model;
 using OfficeOpenXml;
 using OfficeOpenXml.Drawing;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace ExcelServices
 {
-    internal class ExcelGenerator
+    internal class WriteDataInExcel
     {
         private string[] NamesColumnsOfTest = {"Testing date", "Tester", "Comment", "Addit. Comment", "Apparat", "Release"};
         internal IStatusGeneric<byte[]> Generate(List<TestResult> testResults)

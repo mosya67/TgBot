@@ -1,4 +1,5 @@
-﻿using Database;
+﻿using Database.Database;
+using Database.Database.Model;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -12,26 +13,6 @@ namespace DatabaseServices
     public class DbServices
     {
         private List<ValidationResult> _errors = new();
-
-        private testdbContext context = new();
-
-        public List<Question> GetQuestionsFromTest(long testId)
-            => context.Tests.AsNoTracking().Include(p => p.Questions).SingleOrDefault(x => x.Id == testId).Questions.ToList();
-
-        public List<Test> GetSortedTests()
-            => context.Tests.AsNoTracking().OrderByDescending(p => p.Date.Date).ToList();
-
-        public int CountQuestionsInTest(long testId)
-            => context.Questions.AsNoTracking().Where(p => p.Test.Id == testId).Count();
-
-        public int CountAnswers()
-            => context.Answers.AsNoTracking().Count();
-
-        public Test GetTest(long testId)
-            => context.Tests.AsNoTracking().SingleOrDefault(p => p.Id == testId);
-
-        public string GetUserName(long Id)
-            => context.Users.SingleOrDefault(e => e.TgId == Id)?.Fio;
 
         public bool ResetFio(long TgId, string fio)
         {

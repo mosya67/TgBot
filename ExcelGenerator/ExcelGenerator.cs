@@ -1,4 +1,5 @@
 ﻿using DatabaseServices;
+using Domain;
 using StatusGeneric;
 using System;
 using System.IO;
@@ -7,32 +8,27 @@ using System.Threading.Tasks;
 
 namespace ExcelServices
 {
-    public class ExServices
+    public class ExcelGenerator : IExcelGenerator
     {
-        private readonly string path = "";
-        private readonly DbServices db = new();
+#warning изменить DbServices
+        private readonly DbServices db;
 
-
-        public ExServices(string path)
-        {
-            this.path = path;
-        }
-
-        public ExServices() {}
+        public ExcelGenerator() {}
 
         public async Task<FileDto> WriteResultsAsync(DateTime? fdate, DateTime? ldate)
         {
+
             FileDto file = new FileDto();
             string fileName = $"{fdate?.ToShortDateString()}__{ldate?.ToShortDateString()}.xlsx";
-            var reportExcel = new ExcelGenerator().Generate(db.GetData(fdate, ldate));
+            var reportExcel = new WriteDataInExcel().Generate(db.GetData(fdate, ldate));
             if (reportExcel.HasErrors)
             {
                 file.Errors = reportExcel.Errors.Select(e => e.ErrorResult.ErrorMessage).ToList();
                 return file;
             }
 
-            await File.WriteAllBytesAsync(path + fileName, reportExcel.Result);
-            file.PathName = path + fileName;
+            await File.WriteAllBytesAsync(fileName, reportExcel.Result);
+            file.PathName = fileName;
             return file;
         }
     }

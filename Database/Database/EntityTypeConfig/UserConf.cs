@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
+using Database.Database.Model;
 
-namespace Database
+namespace Database.Database.EntityTypeConfig
 {
     public class UserConf : IEntityTypeConfiguration<User>
     {

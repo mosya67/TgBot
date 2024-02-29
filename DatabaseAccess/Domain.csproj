@@ -5,12 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EPPlus" Version="4.5.3.3" />
     <PackageReference Include="GenericServices.StatusGeneric" Version="1.2.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Database\Database.csproj" />
   </ItemGroup>
 
 </Project>

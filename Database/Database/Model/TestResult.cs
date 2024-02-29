@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 #nullable disable
 
-namespace Database
+namespace Database.Database.Model
 {
     public partial class TestResult
     {

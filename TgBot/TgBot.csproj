@@ -16,7 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DatabaseAccess\Services.csproj" />
+    <ProjectReference Include="..\DatabaseAccess\Domain.csproj" />
+    <ProjectReference Include="..\Database\Database.csproj" />
+    <ProjectReference Include="..\ExcelGenerator\ExcelGenerator.csproj" />
   </ItemGroup>
 
 </Project>
