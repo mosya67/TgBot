@@ -18,47 +18,39 @@ namespace TelegramBot
 {
     internal partial class Program
     {
-        public static DbServices dbServices;
-        public static ExServices excelServices;
+        public static DbServices dbServices = new();
+        public static ExServices excelServices = new();
+        public static Dictionary<long, UserState> State = new();
         const string token = "6185570726:AAHBPUqL-qMSrmod9YxV6ot3IKrJ3YXzzCc";
-        public static Dictionary<long, UserState> State;
         public static string[] _commands = {"/start", "/resetname"};
 
         static void Main(string[] args)
         {
-            State = new();
-            excelServices = new();
-            dbServices = new();
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
-                BypassProxyOnLocal = false,
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(
-                    userName: "Mostyaev_AS",
-                    password: "mostaevartem12345--")
+                //Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
+                //BypassProxyOnLocal = false,
+                //UseDefaultCredentials = false,
+                //Credentials = new NetworkCredential(
+                //    userName: "Mostyaev_AS",
+                //    password: "mostaevartem12345--")
             };
             var Httpclient = new HttpClient(handler: new HttpClientHandler { Proxy = proxy }, disposeHandler: true);
-            var client = new TelegramBotClient(token, Httpclient); // TODO сменить бота
+            var client = new TelegramBotClient(token, Httpclient);
             client.StartReceiving(Update, Error);
             Console.WriteLine("Bot started");
             Console.Read();
-            dbServices.Dispose();
-            excelServices.Dispose();
         }
 
         async public static Task Update(ITelegramBotClient client, Update update, CancellationToken token)
         {
-            Task task;
             if (update.Type == UpdateType.Message)
             {
-                task = new(async () => await HandleMessage(client, update.Message));
-                task.Start();
+                await HandleMessage(client, update.Message);
             }
             else if (update?.Type == UpdateType.CallbackQuery)
             {
-                task = new(async () => await HandleCallBackQuery(client, update.CallbackQuery));
-                task.Start();
+                await HandleCallBackQuery(client, update.CallbackQuery);
             }
         }
 

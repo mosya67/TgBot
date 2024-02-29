@@ -7,7 +7,7 @@ namespace Database
 {
     public partial class testdbContext : DbContext
     {
-        public testdbContext(){}
+        public testdbContext(){ Database.EnsureCreated(); }
 
         public testdbContext(DbContextOptions<testdbContext> options)
             : base(options){}
@@ -22,7 +22,7 @@ namespace Database
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlite("Data Source=docs\\Database\\db.db");
+                optionsBuilder.UseSqlite("Data Source=db.db");
             }
         }
 

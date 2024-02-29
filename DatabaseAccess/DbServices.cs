@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace DatabaseServices
 {
-    public class DbServices : IDisposable
+    public class DbServices
     {
         private List<ValidationResult> _errors = new();
 
@@ -44,11 +44,6 @@ namespace DatabaseServices
                 return true;
             }
             return false;
-        }
-
-        public void Dispose()
-        {
-            context.Dispose();
         }
 
         public ImmutableList<ValidationResult> SaveResult

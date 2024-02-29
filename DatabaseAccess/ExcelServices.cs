@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace ExcelServices
 {
-    public class ExServices : IDisposable
+    public class ExServices
     {
-        private readonly string path = "docs\\Reports\\";
+        private readonly string path = "";
         private readonly DbServices db = new();
 
 
@@ -34,11 +34,6 @@ namespace ExcelServices
             await File.WriteAllBytesAsync(path + fileName, reportExcel.Result);
             file.PathName = path + fileName;
             return file;
-        }
-
-        public void Dispose()
-        {
-            db.Dispose();
         }
     }
 }
