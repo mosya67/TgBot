@@ -1,25 +1,27 @@
 ﻿using Database.Database;
+using Database.Database.Model;
 using Domain;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Database
+namespace Database.GetFunctions
 {
-    public class GetUserName : IGetCommand<string, long>
+    public class GetSortedTests : IGetCommand<List<Test>>
     {
         readonly Context context;
 
-        public GetUserName(Context context)
+        public GetSortedTests(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public string Get(long i)
+        public List<Test> Get()
         {
-            return context.Users.SingleOrDefault(e => e.TgId == Id)?.Fio;
+            return context.Tests.AsNoTracking().OrderByDescending(p => p.Date.Date).ToList();
         }
     }
 }

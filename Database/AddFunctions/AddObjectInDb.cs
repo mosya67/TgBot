@@ -1,27 +1,28 @@
 ﻿using Database.Database;
 using Database.Database.Model;
 using Domain;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Database
+namespace Database.AddFunctions
 {
-    public class GetTest : IGetCommand<Test, long>
+    public class AddObjectInDb<TIn> : IWriteCommand<TIn>
     {
         readonly Context context;
 
-        public GetTest(Context context)
+        public AddObjectInDb(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public Test Get(long testId)
+        public void Write(TIn _object)
         {
-            return context.Tests.AsNoTracking().SingleOrDefault(p => p.Id == testId);
+            context.Add(_object);
+
+            context.SaveChanges();
         }
     }
 }

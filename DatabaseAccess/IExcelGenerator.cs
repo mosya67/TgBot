@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace Domain
 {
-    public interface IExcelGenerator
+    public interface IExcelGenerator<TOut, TIn>
     {
-        public Task<FileDto> WriteResultsAsync(DateTime? fdate, DateTime? ldate);
+        public TOut WriteResultsAsync(TIn parameter);
     }
 }

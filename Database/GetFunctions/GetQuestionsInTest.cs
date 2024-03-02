@@ -8,13 +8,13 @@ using Database.Database.Model;
 using Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Database
+namespace Database.GetFunctions
 {
-    public class GetQuestions : IGetCommand<IEnumerable<Question>, long>
+    public class GetQuestionsInTest : IGetCommand<IEnumerable<Question>, long>
     {
         readonly Context context;
 
-        public GetQuestions(Context context)
+        public GetQuestionsInTest(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }

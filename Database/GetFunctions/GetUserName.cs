@@ -1,26 +1,25 @@
 ﻿using Database.Database;
 using Domain;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Database
+namespace Database.GetFunctions
 {
-    public class CheckAnswersCount : IGetCommand<int>
+    public class GetUserName : IGetCommand<string, long>
     {
         readonly Context context;
 
-        public CheckAnswersCount(Context context)
+        public GetUserName(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public int Get()
+        public string Get(long Id)
         {
-            return context.Answers.AsNoTracking().Count();
+            return context.Users.SingleOrDefault(e => e.TgId == Id)?.Fio;
         }
     }
 }

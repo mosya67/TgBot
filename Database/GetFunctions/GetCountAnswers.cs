@@ -1,5 +1,4 @@
 ﻿using Database.Database;
-using Database.Database.Model;
 using Domain;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -8,20 +7,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Database
+namespace Database.GetFunctions
 {
-    public class GetSortedTests : IGetCommand<List<Test>>
+    public class GetCountAnswers : IGetCommand<int>
     {
         readonly Context context;
 
-        public GetSortedTests(Context context)
+        public GetCountAnswers(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public List<Test> Get()
+        public int Get()
         {
-            return context.Tests.AsNoTracking().OrderByDescending(p => p.Date.Date).ToList();
+            return context.Answers.AsNoTracking().Count();
         }
     }
 }
