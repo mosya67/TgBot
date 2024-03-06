@@ -1,5 +1,5 @@
-﻿using Database.Database.Model;
-using Domain;
+﻿using Domain;
+using Domain.Dto;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -10,20 +10,20 @@ using System.Threading.Tasks;
 
 namespace Database.AddFunctions
 {
-    public class AddTestResultInDbWithValidationDecorator : IWriteCommand<ImmutableList<ValidationResult>, ResultTestDTO>
+    public class AddTestResultInDbWithValidationDecorator : IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto>
     {
         readonly IGetCommand<int> countAnswers;
-        readonly IWriteCommand<ImmutableList<ValidationResult>, ResultTestDTO> saveTestResult;
+        readonly IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto> saveTestResult;
 
-        public AddTestResultInDbWithValidationDecorator(IGetCommand<int> countAnswers, IWriteCommand<ImmutableList<ValidationResult>, ResultTestDTO> saveTestResult)
+        public AddTestResultInDbWithValidationDecorator(IGetCommand<int> countAnswers, IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto> saveTestResult)
         {
             this.countAnswers = countAnswers ?? throw new ArgumentNullException(nameof(countAnswers));
             this.saveTestResult = saveTestResult ?? throw new ArgumentNullException(nameof(saveTestResult));
         }
 
-        public ImmutableList<ValidationResult> Write(ResultTestDTO dto)
+        public IReadOnlyList<ValidationResult> Write(ResultTestDto dto)
         {
-            List<ValidationResult> _errors = new();
+            List<ValidationResult> _errors = new ();
 
             if (dto.Errors != null)
                 _errors = new(_errors.Union(dto.Errors));
@@ -45,7 +45,7 @@ namespace Database.AddFunctions
                 saveTestResult.Write(dto);
             }
 
-            return _errors.ToImmutableList();
+            return _errors;
         }
     }
 }

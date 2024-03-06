@@ -1,9 +1,8 @@
-﻿using Database.Database.Model;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace DatabaseServices
+namespace Domain.Dto
 {
     public class AnswerDto
     {
@@ -24,10 +23,10 @@ namespace DatabaseServices
         [MaxLength(128, ErrorMessage = "превышена длинна доп комментария")]
         public string AdditionalCommentForTest { get; set; }
         public DateTime? ldate { get; set; }
-        public DateTime? fdate{ get; set; }
+        public DateTime? fdate { get; set; }
         public string Device { get; set; }
         public string Release { get; set; }
 
-        public AnswerDto() {}
+        public AnswerDto() { }
     }
 }

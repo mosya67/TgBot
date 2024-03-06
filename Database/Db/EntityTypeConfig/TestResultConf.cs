@@ -1,8 +1,8 @@
-﻿using Database.Database.Model;
+﻿using Domain.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Database.Database.EntityTypeConfig
+namespace Database.Db.EntityTypeConfig
 {
     internal class TestResultConf : IEntityTypeConfiguration<TestResult>
     {

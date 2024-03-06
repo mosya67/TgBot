@@ -1,6 +1,7 @@
-﻿using Database.Database;
-using Database.Database.Model;
+﻿using Database.Db;
+using Domain.Model;
 using Domain;
+using Domain.Dto;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

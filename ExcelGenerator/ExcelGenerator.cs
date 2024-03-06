@@ -1,7 +1,7 @@
-﻿using DatabaseServices;
+﻿using Domain.Model;
 using Domain;
-using StatusGeneric;
-using System;
+using Domain.Dto;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,17 +10,14 @@ namespace ExcelServices
 {
     public class ExcelGenerator : IExcelGenerator<Task<FileDto>, DatesForExcelDTO>
     {
-#warning изменить DbServices
-        private readonly DbServices db;
-
-        public ExcelGenerator() {}
+        readonly IGetCommand<IList<TestResult>, DatesForExcelDTO> getData;
 
         public async Task<FileDto> WriteResultsAsync(DatesForExcelDTO dto)
         {
 
             FileDto file = new FileDto();
             string fileName = $"{dto.fdate?.ToShortDateString()}__{dto.ldate?.ToShortDateString()}.xlsx";
-            var reportExcel = new WriteDataInExcel().Generate(db.GetData(dto.fdate, dto.ldate));
+            var reportExcel = new WriteDataInExcel().Generate(getData.Get(new DatesForExcelDTO { fdate = dto.fdate, ldate = dto.ldate }));
             if (reportExcel.HasErrors)
             {
                 file.Errors = reportExcel.Errors.Select(e => e.ErrorResult.ErrorMessage).ToList();

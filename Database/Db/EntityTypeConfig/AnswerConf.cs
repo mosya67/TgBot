@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
-using Database.Database.Model;
+using Domain.Model;
 
-namespace Database.Database.EntityTypeConfig
+namespace Database.Db.EntityTypeConfig
 {
     internal class AnswerConf : IEntityTypeConfiguration<Answer>
     {

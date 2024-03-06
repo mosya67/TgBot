@@ -1,10 +1,11 @@
-﻿using Database.Database;
-using Domain;
+﻿using Domain;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Threading.Tasks;
+using Database.Db;
 
 namespace Database.GetFunctions
 {
@@ -19,7 +20,7 @@ namespace Database.GetFunctions
 
         public string Get(long Id)
         {
-            return context.Users.SingleOrDefault(e => e.TgId == Id)?.Fio;
+            return context.Users.AsNoTracking().SingleOrDefault(e => e.TgId == Id)?.Fio;
         }
     }
 }

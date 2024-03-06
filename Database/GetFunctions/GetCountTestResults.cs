@@ -1,4 +1,4 @@
-﻿using Database.Database;
+﻿using Database.Db;
 using Domain;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetCountTestResults : IGetCommand<int>
+    public class GetCountTestResults : IGetCommand<ushort>
     {
         readonly Context context;
 
@@ -18,9 +18,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public int Get()
+        public ushort Get()
         {
-            return context.TestResults.AsNoTracking().Count();
+            return (ushort)context.TestResults.AsNoTracking().Count();
         }
     }
 }

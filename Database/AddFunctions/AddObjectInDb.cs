@@ -1,5 +1,4 @@
-﻿using Database.Database;
-using Database.Database.Model;
+﻿using Database.Db;
 using Domain;
 using System;
 using System.Collections.Generic;

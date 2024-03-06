@@ -1,14 +1,14 @@
-﻿using Database.Database.Model;
-using Database.Database;
-using Domain;
+﻿using Domain;
 using System;
-using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Collections.Generic;
+using Domain.Dto;
+using Domain.Model;
 
 namespace Database.AddFunctions
 {
-    public class AddTestResultInDb : IWriteCommand<ImmutableList<ValidationResult>, ResultTestDTO>
+    public class AddTestResultInDb : IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto>
     {
         readonly IGetCommand<Test, long> getTest;
         readonly IGetCommand<int> countTestResults;
@@ -24,7 +24,7 @@ namespace Database.AddFunctions
         }
 
 #warning изменить ImmutableList<ValidationResult> на исключения
-        public ImmutableList<ValidationResult> Write(ResultTestDTO dto)
+        public IReadOnlyList<ValidationResult> Write(ResultTestDto dto)
         {
             var test = getTest.Get(dto.TestId);
 

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 #nullable disable
 
-namespace Database.Database.Model
+namespace Domain.Model
 {
     public partial class Answer
     {

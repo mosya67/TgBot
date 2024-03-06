@@ -1,10 +1,10 @@
-﻿using Database.Database.Model;
-using Database.Database.EntityTypeConfig;
+﻿using Database.Db.EntityTypeConfig;
+using Domain.Model;
 using Microsoft.EntityFrameworkCore;
 
 #nullable disable
 
-namespace Database.Database
+namespace Database.Db
 {
     public partial class Context : DbContext
     {

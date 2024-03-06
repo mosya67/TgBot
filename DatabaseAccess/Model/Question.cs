@@ -3,7 +3,7 @@
 
 using Database;
 
-namespace Database.Database.Model
+namespace Domain.Model
 {
     public partial class Question
     {

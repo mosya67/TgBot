@@ -1,6 +1,7 @@
-﻿using Database.Database;
-using Database.Database.Model;
+﻿using Database.Db;
+using Domain.Model;
 using Domain;
+using Domain.Dto;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Linq;
 
 namespace Database.GetFunctions
 {
-    public class GetDataForGeneratingReport : IGetCommand<IEnumerable<TestResult>, DatesForExcelDTO>
+    public class GetDataForGeneratingReport : IGetCommand<IList<TestResult>, DatesForExcelDTO>
     {
         readonly Context context;
 
@@ -17,7 +18,7 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public IEnumerable<TestResult> Get(DatesForExcelDTO dates)
+        public IList<TestResult> Get(DatesForExcelDTO dates)
         {
             var results = context.TestResults
                     .Include(p => p.Answers)
@@ -39,7 +40,7 @@ namespace Database.GetFunctions
                 results.Where(e => e.Date.Date >= dates.fdate.Value.Date && e.Date.Date <= dates.ldate.Value.Date);
             }
 
-            return results.AsEnumerable();
+            return results.ToList();
         }
     }
 }

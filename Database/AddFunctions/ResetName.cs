@@ -1,6 +1,7 @@
-﻿using Database.Database;
-using Database.Database.Model;
+﻿using Database.Db;
 using Domain;
+using Domain.Dto;
+using Domain.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 namespace Database.AddFunctions
 {
 #warning класс ResetName переделать на SetName
-    public class ResetName : IWriteCommand<bool, ResetNameDTO>
+    public class ResetName : IWriteCommand<bool, ResetNameDto>
     {
         readonly Context context;
         readonly IGetCommand<User, long> getUser;
@@ -21,7 +22,7 @@ namespace Database.AddFunctions
             this.getUser = getUser ?? throw new ArgumentNullException(nameof(getUser));
         }
 
-        public bool Write(ResetNameDTO parameter)
+        public bool Write(ResetNameDto parameter)
         {
             var user = getUser.Get(parameter.Id);
             if (user != null)

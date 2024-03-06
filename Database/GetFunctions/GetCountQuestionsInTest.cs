@@ -1,15 +1,13 @@
-﻿using Database.Database;
+﻿using Database.Db;
 using Domain;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetCountQuestionsInTest : IGetCommand<int, long>
+    public class GetCountQuestionsInTest : IGetCommand<sbyte, long>
     {
         readonly Context context;
 
@@ -18,9 +16,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public int Get(long testId)
+        public sbyte Get(long testId)
         {
-            return context.Questions.AsNoTracking().Where(p => p.Test.Id == testId).Count();
+            return (sbyte)context.Questions.AsNoTracking().Where(p => p.Test.Id == testId).Count();
         }
     }
 }

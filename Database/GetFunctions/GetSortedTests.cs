@@ -1,5 +1,5 @@
-﻿using Database.Database;
-using Database.Database.Model;
+﻿using Database.Db;
+using Domain.Model;
 using Domain;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetSortedTests : IGetCommand<List<Test>>
+    public class GetSortedTests : IGetCommand<IList<Test>>
     {
         readonly Context context;
 
@@ -19,7 +19,7 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public List<Test> Get()
+        public IList<Test> Get()
         {
             return context.Tests.AsNoTracking().OrderByDescending(p => p.Date.Date).ToList();
         }

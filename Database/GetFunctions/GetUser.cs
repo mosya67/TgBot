@@ -1,11 +1,13 @@
-﻿using Database.Database;
-using Database.Database.Model;
+﻿using Domain.Model;
+using Microsoft.EntityFrameworkCore;
 using Domain;
+using Domain.Dto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Database.Db;
 
 namespace Database.GetFunctions
 {
@@ -20,7 +22,7 @@ namespace Database.GetFunctions
 
         public User Get(long id)
         {
-            return context.Users.SingleOrDefault(e => e.TgId == id);
+            return context.Users.AsNoTracking().SingleOrDefault(e => e.TgId == id);
         }
     }
 }

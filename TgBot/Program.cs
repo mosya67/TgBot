@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
 using System.Threading;
-using DatabaseServices;
 using System.Linq;
 using System.Diagnostics;
 using ExcelServices;
@@ -14,15 +13,29 @@ using System.Net.Http;
 using System.Net;
 using System.IO;
 using Domain;
+using Domain.Dto;
+using Domain.Model;
+using Database.GetFunctions;
+using System.ComponentModel.DataAnnotations;
 
 namespace TelegramBot
 {
     internal partial class Program
     {
-        static IExcelGenerator excel;
-        static Dictionary<long, UserState> State;
         const string token = "6185570726:AAHBPUqL-qMSrmod9YxV6ot3IKrJ3YXzzCc";
         static string[] _commands = {"/start", "/resetname"};
+        static Dictionary<long, UserState> State;
+
+        static IExcelGenerator<Task<FileDto>, DatesForExcelDTO> excel;
+        static IGetCommand<Test, long> getTest;
+        static IGetCommand<Domain.Model.User, long> getUser;
+        static IGetCommand<string, long> getUserName;
+        static IGetCommand<IList<Question>, long> getQuestionInTest;
+        static IGetCommand<IList<Test>> getSortedTests;
+        static IGetCommand<sbyte, long> getCountQuestionsInTest;
+        static IGetCommand<ushort> getCountTestResults;
+        static IWriteCommand<bool, ResetNameDto> resetName;
+        static IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto> saveResult;
 
         static void Main(string[] args)
         {
@@ -94,13 +107,13 @@ namespace TelegramBot
             int testid;
             if (int.TryParse(message?.Text, out testid) && State[id].ChatState == ChatState.SelectingTest)
             {
-                if (dbServices.GetTest(testid) == null)
+                if (getTest.Get(testid) == null)
                 {
                     await client.SendTextMessageAsync(id, "вы выбрали не существующий тест");
                     return;
                 }
 
-                if (dbServices.CountQuestionsInTest(testid) == 0)
+                if (getCountQuestionsInTest.Get(testid) == 0)
                 {
                     await client.SendTextMessageAsync(id, "в тесте нет вопросов.\nвы можете выбрать другой тест");
                     return;
@@ -108,7 +121,7 @@ namespace TelegramBot
 
                 State[id].dto.testId = testid;
                 State[id].dto.startDate = DateTime.Now;
-                var questions = dbServices.GetQuestionsFromTest(testid);
+                var questions = getQuestionInTest.Get(testid);
                 for (int i = 0; i < questions.Count(); i++)
                 {
                     State[id].Questions.Add(new()
@@ -120,7 +133,7 @@ namespace TelegramBot
                 State[id].QuestNumb = 0;
                 State[id].dto.TgId = message.Chat.Id;
 
-                string name = dbServices.GetUserName(id);
+                string name = getUserName.Get(id);
                 if (string.IsNullOrEmpty(name))
                 {
                     await client.SendTextMessageAsync(id, "Введите фио");
@@ -156,7 +169,7 @@ namespace TelegramBot
             }
             else if (State[id].ChatState == ChatState.SetNewFio)
             {
-                if (dbServices.ResetFio(id, message.Text))
+                if (resetName.Write(new ResetNameDto { Id = id, Name = message.Text }))
                     await client.SendTextMessageAsync(id, "имя изменено");
                 else
                     await client.SendTextMessageAsync(id, "вы еще не зарегистрированы");
@@ -184,7 +197,7 @@ namespace TelegramBot
                 }
                 State[id].dto.ldate = date.Result;
 
-                var file = await excel.WriteResultsAsync(State[id].dto.fdate, State[id].dto.ldate);
+                var file = await excel.WriteResultsAsync(new DatesForExcelDTO { fdate = State[id].dto.fdate, ldate = State[id].dto.ldate });
                 if (file.Errors == null)
                 {
                     using (Stream str = System.IO.File.OpenRead(file.PathName))
@@ -271,7 +284,7 @@ namespace TelegramBot
             {
                 State[id] = new();
                 State[id].dto.Answers = new();
-                var tests = dbServices.GetSortedTests();
+                var tests = getSortedTests.Get();
 
                 if (tests.Count() == 0)
                 {
@@ -301,7 +314,7 @@ namespace TelegramBot
             else if (query.Data == "SkipLastDate")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                var file = await excel.WriteResultsAsync(State[id].dto.fdate, State[id].dto.ldate);
+                var file = await excel.WriteResultsAsync(new DatesForExcelDTO { fdate = State[id].dto.fdate, ldate = State[id].dto.ldate });
                 if (file.Errors == null)
                 {
                     using (Stream str = System.IO.File.OpenRead(file.PathName))
@@ -352,7 +365,8 @@ namespace TelegramBot
                         }
                     }
                     await client.SendTextMessageAsync(id, "тест завершен");
-                    var errors = dbServices.SaveResult(State[id].dto);
+#warning error
+                    var errors = saveResult.Write(State[id].dto); // <--
 
                     if (errors.Count() != 0)
                     {
@@ -390,7 +404,8 @@ namespace TelegramBot
                     }
 
                     await client.SendTextMessageAsync(id, "тест завершен");
-                    var errors = dbServices.SaveResult(State[id].dto);
+#warning error
+                    var errors = saveResult.Write(State[id].dto); // <--
 
                     if (errors.Count() != 0)
                     {
@@ -416,7 +431,8 @@ namespace TelegramBot
             {
                 await client.SendTextMessageAsync(id, "тест завершен");
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                var errors = dbServices.SaveResult(State[id].dto);
+#warning error
+                var errors = saveResult.Write(State[id].dto); // <--
 
                 if (errors.Count() != 0)
                 {

@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Domain
+namespace Domain.Dto
 {
-    public class DatesForExcelDTO
+    public class ResetNameDto
     {
-        public DateTime? fdate;
-        public DateTime? ldate;
+        public string Name;
+        public long Id;
     }
 }

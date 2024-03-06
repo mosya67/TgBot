@@ -1,8 +1,5 @@
-﻿using Database.Database.Model;
+﻿using Domain.Model;
 using OfficeOpenXml;
-using OfficeOpenXml.Drawing;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
 using OfficeOpenXml.Style;
 using StatusGeneric;
 using System.Collections.Generic;
@@ -14,7 +11,7 @@ namespace ExcelServices
     internal class WriteDataInExcel
     {
         private string[] NamesColumnsOfTest = {"Testing date", "Tester", "Comment", "Addit. Comment", "Apparat", "Release"};
-        internal IStatusGeneric<byte[]> Generate(List<TestResult> testResults)
+        internal IStatusGeneric<byte[]> Generate(IList<TestResult> testResults)
         {
             var status = new StatusGenericHandler<byte[]>();
             var tests = testResults.Select(e => e.Test).GroupBy(e => e.Id).Select(e => e.First()).ToList();
