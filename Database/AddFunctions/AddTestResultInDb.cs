@@ -13,28 +13,39 @@ namespace Database.AddFunctions
     {
         readonly IGetCommand<int> countTestResults;
         readonly IWriteCommand<TestResult> saveTestResult;
+        readonly IGetCommand<Test, ushort> getTest;
+        readonly IGetCommand<User, long> getUser;
 
-        public AddTestResultInDb(IGetCommand<int> countTestResults, IWriteCommand<TestResult> saveTestResult)
+        public AddTestResultInDb(IGetCommand<int> countTestResults, IWriteCommand<TestResult> saveTestResult, IGetCommand<Test, ushort> getTest, IGetCommand<User, long> getUser)
         {
             this.countTestResults = countTestResults ?? throw new ArgumentNullException(nameof(countTestResults));
             this.saveTestResult = saveTestResult ?? throw new ArgumentNullException(nameof(saveTestResult));
+            this.getTest = getTest ?? throw new ArgumentNullException(nameof(getTest));
+            this.getUser = getUser ?? throw new ArgumentNullException(nameof(getUser));
         }
+
 
 #warning изменить ImmutableList<ValidationResult> на исключения
         public IReadOnlyList<ValidationResult> Write(ResultTestDto dto)
         {
+            var user = getUser.Get(dto.UserId) ?? new User
+            {
+                Fio = dto.UserName,
+                TgId = dto.UserId,
+            };
+
             var result = new TestResult()
             {
                 Date = DateTime.Now,
-                User = dto.User,
-                Test = dto.Test,
+                User = user,
+#warning изменить получение Test в Program на TestId
+                Test = getTest.Get(dto.Test.Id),
                 Answers = dto.Answers,
                 Id = countTestResults.Get() + 1,
                 Comment = dto.CommentFromTest,
                 AdditionalComment = dto.AdditionalCommentForTest,
                 Apparat = dto.Device,
                 Release = dto.Release,
-                UserId = dto.User.UserId,
             };
 
             saveTestResult.Write(result);

@@ -3,6 +3,8 @@ using Database.Db;
 using Database.GetFunctions;
 using Domain.Model;
 using ExcelServices;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Numeric;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
 using StatusGeneric;
 using System;
 using System.Collections.Generic;
@@ -47,7 +49,7 @@ namespace TelegramBot
             getTest = new GetTest(
                 context);
 
-            getUser = new GetUser(
+            getUserName = new GetUserName(
                 context);
 
             getCountUsers = new GetCountAnswers(
@@ -56,17 +58,29 @@ namespace TelegramBot
             getSortedTests = new GetSortedTests(
                 context);
 
+            var getCountAnswers = new GetCountAnswers(
+                    context);
+
             saveResult = new AddTestResultInDbWithValidationDecorator(
-                new GetCountAnswers(
-                    context),
+                getCountAnswers,
                 new AddTestResultInDbWithValidationDecorator(
-                    new GetCountAnswers(
-                        context),
+                    getCountAnswers,
                     new AddTestResultInDb(
                         new GetCountTestResults(
                             context),
                     new AddObjectInDb<TestResult>(
+                        context),
+                    getTest,
+                    new GetUser(
                         context))));
+        }
+
+        static async void DeleteButtonsAsync(ITelegramBotClient client, long id)
+        {
+            foreach (var button in State[id].deleteButtons)
+            {
+                await client.EditMessageReplyMarkupAsync(id, button);
+            }
         }
     }
 }

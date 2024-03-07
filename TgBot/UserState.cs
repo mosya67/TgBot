@@ -30,9 +30,9 @@ namespace TelegramBot
         public DatesForExcelDTO datesDto;
         public AnswerDto answerDto;
         public IList<Question> Questions;
+        public List<int> deleteButtons = new List<int>();
         public bool flag;
-        public bool flag2;
-
+        
         public UserState()
         {
             result = new();

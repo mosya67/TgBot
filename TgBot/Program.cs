@@ -30,7 +30,7 @@ namespace TelegramBot
         static IExcelGenerator<Task<FileDto>, DatesForExcelDTO> excel;
         static IGetCommand<Test, ushort> getTest;
         static IGetCommand<int> getCountUsers;
-        static IGetCommand<Domain.Model.User, long> getUser;
+        static IGetCommand<string, long> getUserName;
         static IGetCommand<IList<Test>> getSortedTests;
         static IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto> saveResult;
         static ResultTestDto res;
@@ -71,7 +71,7 @@ namespace TelegramBot
 
         private static Task Error(ITelegramBotClient client, Exception ex, CancellationToken token)
         {
-            Console.WriteLine($"{ex.GetType()}\n{ex.Message}\nStack:\n\n{ex.StackTrace}");
+            Console.WriteLine($"{ex.GetType()}\n{ex.Message}\n{ex.InnerException.Message}");
             throw new Exception(ex.Message + '\n' + '\n' + ex.InnerException.Message);
         }
 
@@ -86,7 +86,6 @@ namespace TelegramBot
             {
                 State[id].ChatState = ChatState.None;
                 State[id].flag = false;
-                State[id].flag2 = false;
                 await client.SendTextMessageAsync(id, "Список комманд: /commands");
                 await client.SendTextMessageAsync(id, "вы можете выбрать тест или получить отчеты", replyMarkup: start);
                 return;
@@ -123,23 +122,27 @@ namespace TelegramBot
                 State[id].result.Test = test;
                 State[id].QuestNumb = 0;
 
-                State[id].result.User = getUser.Get(id);
-                if (State[id].result.User == null)
+                State[id].result.Answers = new List<Answer>();
+                for (int i = 0; i < State[id].Questions.Count(); i++)
+                    State[id].result.Answers.Add(new Answer());
+
+                State[id].result.UserName = getUserName.Get(id);
+                if (State[id].result.UserName == null)
                 {
-                    State[id].result.User = new Domain.Model.User() { TgId = id, UserId = getCountUsers.Get() };
+                    State[id].result.UserId = id;
                     await client.SendTextMessageAsync(id, "Введите фио");
                     State[id].ChatState = ChatState.SetFio;
                 }
                 else
                 {
-                    State[id].result.User.TgId = message.Chat.Id;
+                    State[id].result.UserId = id;
                     State[id].ChatState = ChatState.CommentForTest;
                     await client.SendTextMessageAsync(id, "введите комментарий к тесту[необязательно]", replyMarkup: NextCom);
                 }
             }
             else if (State[id].ChatState == ChatState.SetFio)
             {
-                State[id].result.User.Fio = message.Text;
+                State[id].result.UserName = message.Text;
                 await client.SendTextMessageAsync(id, "введите комментарий к тесту[необязательно]", replyMarkup: NextCom);
                 State[id].ChatState = ChatState.CommentForTest;
             }
@@ -147,11 +150,10 @@ namespace TelegramBot
             {
                 if (!State[id].flag)
                 {
-                    State[id].result.CommentFromTest = message.Text;
+                    State[id].result.Answers[State[id].QuestNumb].Comment = message.Text;
                     if (State[id].QuestNumb == State[id].Questions.Count() - 1)
                     {
                         State[id].flag = false;
-                        State[id].flag2 = true;
                     }
                 }
                 else
@@ -160,7 +162,7 @@ namespace TelegramBot
             }
             else if (State[id].ChatState == ChatState.SetNewFio)
             {
-                State[id].result.User.Fio = message.Text;
+                State[id].result.UserName = message.Text;
                 await client.SendTextMessageAsync(id, "имя изменено");
                 State[id].ChatState = ChatState.None;
             }
@@ -227,18 +229,21 @@ namespace TelegramBot
 
             if (State[id].ChatState == ChatState.AnswersTheQuestion)
             {
-                if (State[id].flag)
-                {
-                    State[id].ChatState = ChatState.Commenting;
-                    State[id].result.Answers[State[id].QuestNumb].Result = query.Data;
-                    await client.EditMessageTextAsync(id, mesId, "Введите комментарий[необязательно]", replyMarkup: next);
-                    return;
-                }
-
-                State[id].answerDto.comment = null;
-                State[id].answerDto.answer = query.Data;
-                await client.EditMessageTextAsync(id, mesId, "Введите комментарий[необязательно]", replyMarkup: next);
                 State[id].ChatState = ChatState.Commenting;
+                State[id].result.Answers[State[id].QuestNumb].Result = query.Data;
+                await client.EditMessageTextAsync(id, mesId, "Введите комментарий[необязательно]", replyMarkup: next);
+                //if (State[id].flag)
+                //{
+                //    State[id].ChatState = ChatState.Commenting;
+                //    State[id].result.Answers[State[id].QuestNumb].Result = query.Data;
+                //    await client.EditMessageTextAsync(id, mesId, "Введите комментарий[необязательно]", replyMarkup: next);
+                //    return;
+                //}
+
+                //State[id].answerDto.comment = null;
+                //State[id].answerDto.answer = query.Data;
+                //await client.EditMessageTextAsync(id, mesId, "Введите комментарий[необязательно]", replyMarkup: next);
+                //State[id].ChatState = ChatState.Commenting;
                 
             }
             else if (query.Data == "NextCom")
@@ -331,6 +336,7 @@ namespace TelegramBot
                 if (State[id].flag)
                 {
                     await client.EditMessageReplyMarkupAsync(id, mesId);
+                    //проверка на наличие пропусков
                     for (int i = ++State[id].QuestNumb; i < State[id].Questions.Count(); i++)
                     {
                         if (State[id].result.Answers[i].Result == "пропуск")
@@ -344,6 +350,7 @@ namespace TelegramBot
                             return;
                         }
                     }
+                    //переход к пропускам
                     for (int i = 0; i < State[id].result.Answers.Count(); i++)
                     {
                         if (State[id].result.Answers[i].Result == "пропуск")
@@ -369,15 +376,16 @@ namespace TelegramBot
                     return;
                 }
 
-                if (!string.IsNullOrEmpty(State[id].answerDto.answer) && !State[id].flag && !State[id].flag2)
-                {
-                    await client.EditMessageReplyMarkupAsync(id, mesId);
-                    State[id].result.Answers.Add(new()
-                    {
-                        Comment = State[id].answerDto.comment,
-                        Result = State[id].answerDto.answer,
-                    });
-                }
+                ////попадает когда есть пропуски
+                //if (!string.IsNullOrEmpty(State[id].answerDto.answer) && !State[id].flag && !State[id].flag2)
+                //{
+                //    await client.EditMessageReplyMarkupAsync(id, mesId);
+                //    State[id].result.Answers.Add(new()
+                //    {
+                //        Comment = State[id].answerDto.comment,
+                //        Result = State[id].answerDto.answer,
+                //    });
+                //}
                 State[id].QuestNumb++;
                 if (State[id].QuestNumb == State[id].Questions.Count())
                 {
