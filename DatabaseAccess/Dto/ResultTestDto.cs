@@ -9,9 +9,12 @@ namespace Domain.Dto
 {
     public class ResultTestDto
     {
-        public IList<ValidationResult> Errors;
         public IList<Answer> Answers;
-        public long TestId;
-        public long UserId;
+        public User User;
+        public string CommentFromTest;
+        public string AdditionalCommentForTest;
+        public string Device;
+        public string Release;
+        public Test Test;
     }
 }

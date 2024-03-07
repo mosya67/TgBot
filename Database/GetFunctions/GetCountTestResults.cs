@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetCountTestResults : IGetCommand<ushort>
+    public class GetCountTestResults : IGetCommand<int>
     {
         readonly Context context;
 
@@ -18,9 +18,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public ushort Get()
+        public int Get()
         {
-            return (ushort)context.TestResults.AsNoTracking().Count();
+            return context.TestResults.AsNoTracking().Count();
         }
     }
 }

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetTest : IGetCommand<Test, long>
+    public class GetTest : IGetCommand<Test, ushort>
     {
         readonly Context context;
 
@@ -20,9 +20,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public Test Get(long testId)
+        public Test Get(ushort testId)
         {
-            return context.Tests.AsNoTracking().SingleOrDefault(p => p.Id == testId);
+            return context.Tests.Include(p => p.Questions).SingleOrDefault(p => p.Id == testId);
         }
     }
 }

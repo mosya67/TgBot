@@ -23,10 +23,7 @@ namespace Database.AddFunctions
 
         public IReadOnlyList<ValidationResult> Write(ResultTestDto dto)
         {
-            List<ValidationResult> _errors = new ();
-
-            if (dto.Errors != null)
-                _errors = new(_errors.Union(dto.Errors));
+            List<ValidationResult> _errors = new List<ValidationResult>();
 
             var _countAnswers = countAnswers.Get();
             var valContext = new ValidationContext(dto);
@@ -38,7 +35,6 @@ namespace Database.AddFunctions
                 Validator.TryValidateObject(dto.Answers[i], valContext, _errors, true);
                 dto.Answers[i].Id = _countAnswers + i + 1;
             }
-
 
             if (_errors.Count() == 0)
             {

@@ -18,6 +18,6 @@ namespace Domain.Model
 
         public User User { get; set; }
         public Test Test { get; set; }
-        public HashSet<Answer> Answers { get; set; }
+        public IList<Answer> Answers { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Domain.Dto;
+using Domain.Model;
 using System;
 using System.Collections.Generic;
 using Telegram.Bot.Types;
@@ -23,17 +24,20 @@ namespace TelegramBot
 
     public class UserState
     {
-        public int QuestNumb { get; set; }
-        public ChatState ChatState { get; set; }
-        public AnswerDto dto { get; set; }
-        public List<Question> Questions { get; set; }
-        public bool flag { get; set; }
-        public bool flag2 { get; set; }
+        public int QuestNumb;
+        public ChatState ChatState;
+        public ResultTestDto result;
+        public DatesForExcelDTO datesDto;
+        public AnswerDto answerDto;
+        public IList<Question> Questions;
+        public bool flag;
+        public bool flag2;
 
         public UserState()
         {
-            dto = new();
-            Questions = new();
+            result = new();
+            answerDto = new();
+            datesDto = new();
         }
     }
 }

@@ -1,8 +1,6 @@
 ﻿
 #nullable disable
 
-using Database;
-
 namespace Domain.Model
 {
     public partial class Question
