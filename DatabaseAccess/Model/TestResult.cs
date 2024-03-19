@@ -18,7 +18,7 @@ namespace Domain.Model
 
         public User User { get; set; }
         public Test Test { get; set; }
-        //public PauseTest PauseTest { get; set; }
+        public PauseTest PauseTest { get; set; }
         public IList<Answer> Answers { get; set; }
     }
 }

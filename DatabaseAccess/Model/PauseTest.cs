@@ -11,5 +11,6 @@ namespace Domain.Model
         public int Id { get; set; }
 
         public TestResult TestResult { get; set; }
+        public User User { get; set; }
     }
 }

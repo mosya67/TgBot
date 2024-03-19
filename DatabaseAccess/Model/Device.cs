@@ -8,5 +8,7 @@ namespace Domain.Model
 {
     public class Device
     {
+        public ushort Id { get; set; }
+        public string Name { get; set; }
     }
 }

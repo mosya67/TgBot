@@ -8,7 +8,10 @@ namespace Database.Db.EntityTypeConfig
     {
         public void Configure(EntityTypeBuilder<Device> builder)
         {
-            throw new System.NotImplementedException();
+            builder.HasKey(x => x.Id);
+            builder.HasIndex(x => x.Id).IsUnique();
+
+            builder.HasIndex(e => e.Name);
         }
     }
 }

@@ -15,14 +15,13 @@ namespace Database.Db
 #endif
         }
 
-        public Context(DbContextOptions<Context> options)
-            : base(options) { }
-
-        public virtual DbSet<Answer> Answers { get; set; }
-        public virtual DbSet<Question> Questions { get; set; }
-        public virtual DbSet<Test> Tests { get; set; }
-        public virtual DbSet<TestResult> TestResults { get; set; }
-        public virtual DbSet<User> Users { get; set; }
+        public DbSet<Answer> Answers { get; set; }
+        public DbSet<Question> Questions { get; set; }
+        public DbSet<Test> Tests { get; set; }
+        public DbSet<TestResult> TestResults { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<PauseTest> PauseTests { get; set; }
+        public DbSet<Device> Devices { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -39,6 +38,7 @@ namespace Database.Db
             modelBuilder.ApplyConfiguration(new TestConf());
             modelBuilder.ApplyConfiguration(new TestResultConf());
             modelBuilder.ApplyConfiguration(new UserConf());
+            modelBuilder.ApplyConfiguration(new PauseTestConf());
 
             OnModelCreatingPartial(modelBuilder);
         }

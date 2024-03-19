@@ -8,7 +8,9 @@ namespace Database.Db.EntityTypeConfig
     {
         public void Configure(EntityTypeBuilder<PauseTest> entity)
         {
-            
+            entity.HasOne(e => e.TestResult)
+                .WithOne()
+                .HasForeignKey<TestResult>();
         }
     }
 }
