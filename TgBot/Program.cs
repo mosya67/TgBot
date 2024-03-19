@@ -234,7 +234,7 @@ namespace TelegramBot
             {
                 State[id].ChatState = ChatState.AdditionalCommentForTest;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                await client.SendTextMessageAsync(id, "введите дополнительный комментарий к тесту[необязательно]", replyMarkup: NextAdCom);
+                 await client.SendTextMessageAsync(id, "введите дополнительный комментарий к тесту[необязательно]", replyMarkup: NextAdCom);
             }
             else if (query.Data == "NextAdCom")
             {
@@ -304,6 +304,7 @@ namespace TelegramBot
             }
             else if (query.Data == "NextQuestion")
             {
+                await client.EditMessageReplyMarkupAsync(id, mesId);
                 if (!State[id].SkippedTestsFlag)
                 {
                     State[id].QuestNumb++;
@@ -313,19 +314,17 @@ namespace TelegramBot
                         NextQuestion(client, id, State[id].QuestNumb);
                         return;
                     }
+                    State[id].QuestNumb = 0;
+
+                    bool check1 = CheckSkippedQuestion(client, id, State[id].QuestNumb); // <---- возможно костыль \\ нужен для того, что бы вывод первого скипа работал нормально
+                    if (check1) return; // тк без него вывод начинается со 2-го, а без инкремента, который чуть ниже, он зацикливается на 1-м
                 }
 
-                var question = GetNumberSkippedQuestion(client, id);
+                bool check2 = CheckSkippedQuestion(client, id, ++State[id].QuestNumb);
+                if (check2) return;
 
-                if (question.HasValue)
-                {
-                    await client.SendTextMessageAsync(id, "Ваш пропуск:");
-                    State[id].QuestNumb = question.Value;
-                    State[id].SkippedTestsFlag = true;
-                    State[id].ChatState = ChatState.AnswersTheQuestion;
-                    NextQuestion(client, id, State[id].QuestNumb);
-                    return;
-                }
+                bool check3 = CheckSkippedQuestion(client, id,  0);// <---- проверка на то, что после прохождения скипов, у человек не нажимал снова скипы
+                if (check3) return;
 
                 SaveTestResult(client, id);
             }

@@ -13,6 +13,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using System.Threading.Tasks;
 
 namespace TelegramBot
 {
@@ -129,8 +130,26 @@ namespace TelegramBot
                     return i;
                 }
             }
-
             return null;
+        }
+
+        static async void SendSkippedQuestion(ITelegramBotClient client, long id, ushort? question)
+        {
+            await client.SendTextMessageAsync(id, "Ваш пропуск:");
+            State[id].QuestNumb = question.Value;
+            State[id].SkippedTestsFlag = true;
+            State[id].ChatState = ChatState.AnswersTheQuestion;
+            NextQuestion(client, id, State[id].QuestNumb);
+        }
+
+        static bool CheckSkippedQuestion(ITelegramBotClient client, long id, ushort questNumb)
+        {
+            var question = GetNumberSkippedQuestion(client, id, questNumb);
+            if (question.HasValue)
+            {
+                SendSkippedQuestion(client, id, question);
+            }
+            return question.HasValue;
         }
     }
 }

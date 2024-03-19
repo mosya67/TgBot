@@ -31,8 +31,6 @@ namespace TelegramBot
         public DatesForExcelDTO datesDto;
         public AnswerDto answerDto;
         public IList<Question> Questions;
-        public ushort NumbersSkippedQuestion;
-        public IList<int> deleteButtons = new List<int>();
         public bool SkippedTestsFlag;
         
         public UserState()
