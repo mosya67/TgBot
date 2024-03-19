@@ -8,6 +8,8 @@ using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
 using StatusGeneric;
 using System;
 using System.Collections.Generic;
+using static TelegramBot.Keyboards;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -16,7 +18,7 @@ namespace TelegramBot
 {
     internal partial class Program
     {
-        public static IStatusGeneric<DateTime> ParseDate(string message)
+        static IStatusGeneric<DateTime> ParseDate(string message)
         {
             DateTime date;
             var status = new StatusGenericHandler<DateTime>();
@@ -33,12 +35,12 @@ namespace TelegramBot
             return status;
         }
 
-        public static void ComponentInitialization()
+        static void ComponentInitialization()
         {
             State = new Dictionary<long, UserState>();
         }
 
-        public static void ScopedComponentInitialization()
+        static void ScopedComponentInitialization()
         {
             Context context = new Context();
 
@@ -50,9 +52,6 @@ namespace TelegramBot
                 context);
 
             getUserName = new GetUserName(
-                context);
-
-            getCountUsers = new GetCountAnswers(
                 context);
 
             getSortedTests = new GetSortedTests(
@@ -81,6 +80,57 @@ namespace TelegramBot
             {
                 await client.EditMessageReplyMarkupAsync(id, button);
             }
+        }
+
+        static async void SaveTestResult(ITelegramBotClient client, long id)
+        {
+            await client.SendTextMessageAsync(id, "тест завершен"); // <---- попал как только закончились скипнутые вопросы у пользователя
+            var errors = saveResult.Write(State[id].result);
+
+            if (errors.Count() != 0)
+            {
+                await client.SendTextMessageAsync(id, "не удалось сохранить результат");
+                string Errors = string.Join("\n", errors);
+                await client.SendTextMessageAsync(id, $"Ошибки:\n{Errors}");
+            }
+            else
+                await client.SendTextMessageAsync(id, "результат сохранен");
+
+            State.Remove(id);
+        }
+
+        static async void NextQuestion(ITelegramBotClient client, long id, int QuestNumb)
+        {
+            await client.SendTextMessageAsync(id,
+                        State[id].Questions[QuestNumb].Question1 +
+                            (State[id].Questions[QuestNumb].Comment != null ? $"\nКомментарий: {State[id].Questions[QuestNumb].Comment}" : ""),
+                        replyMarkup: answer);
+        }
+
+        static ushort? GetNumberSkippedQuestion(ITelegramBotClient client, long id)
+        {
+            for (ushort i = 0; i < State[id].result.Answers.Count(); i++)
+            {
+                if (State[id].result.Answers[i].Result == "LATER")
+                {
+                    return i;
+                }
+            }
+
+            return null;
+        }
+
+        static ushort? GetNumberSkippedQuestion(ITelegramBotClient client, long id, ushort questNumb)
+        {
+            for (ushort i = 0; i < State[id].result.Answers.Count(); i++)
+            {
+                if (State[id].result.Answers[i].Result == "LATER" && i >= questNumb)
+                {
+                    return i;
+                }
+            }
+
+            return null;
         }
     }
 }

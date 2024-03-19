@@ -29,11 +29,9 @@ namespace TelegramBot
 
         static IExcelGenerator<Task<FileDto>, DatesForExcelDTO> excel;
         static IGetCommand<Test, ushort> getTest;
-        static IGetCommand<int> getCountUsers;
         static IGetCommand<string, long> getUserName;
         static IGetCommand<IList<Test>> getSortedTests;
         static IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto> saveResult;
-        static ResultTestDto res;
 
         static void Main(string[] args)
         {
@@ -85,7 +83,7 @@ namespace TelegramBot
             if (message?.Text?.ToLower() == "/start")
             {
                 State[id].ChatState = ChatState.None;
-                State[id].flag = false;
+                State[id].SkippedTestsFlag = false;
                 await client.SendTextMessageAsync(id, "Список комманд: /commands");
                 await client.SendTextMessageAsync(id, "вы можете выбрать тест или получить отчеты", replyMarkup: start);
                 return;
@@ -148,24 +146,24 @@ namespace TelegramBot
             }
             else if (State[id].ChatState == ChatState.Commenting)
             {
-                if (!State[id].flag)
+                if (!State[id].SkippedTestsFlag)
                 {
                     State[id].result.Answers[State[id].QuestNumb].Comment = message.Text;
                     if (State[id].QuestNumb == State[id].Questions.Count() - 1)
                     {
-                        State[id].flag = false;
+                        State[id].SkippedTestsFlag = false;
                     }
                 }
                 else
                     State[id].result.Answers[State[id].QuestNumb].Comment = message.Text;
                 State[id].ChatState = ChatState.None;
             }
-            else if (State[id].ChatState == ChatState.SetNewFio)
-            {
-                State[id].result.UserName = message.Text;
-                await client.SendTextMessageAsync(id, "имя изменено");
-                State[id].ChatState = ChatState.None;
-            }
+            //else if (State[id].ChatState == ChatState.SetNewFio)
+            //{
+            //    State[id].result.UserName = message.Text;
+            //    await client.SendTextMessageAsync(id, "имя изменено");
+            //    State[id].ChatState = ChatState.None;
+            //}
             else if (State[id].ChatState == ChatState.FirtsDate)
             {
                 var date = ParseDate(message.Text);
@@ -223,7 +221,6 @@ namespace TelegramBot
             var id = query.Message.Chat.Id;
             if (!State.ContainsKey(id)) return;
             var mesId = query.Message.MessageId;
-            var questNumb = State[id].QuestNumb;
 
             Console.WriteLine($"{query.Message.Date} {query.From.Username} {query.From.Id}: {query.Data}");
 
@@ -232,19 +229,6 @@ namespace TelegramBot
                 State[id].ChatState = ChatState.Commenting;
                 State[id].result.Answers[State[id].QuestNumb].Result = query.Data;
                 await client.EditMessageTextAsync(id, mesId, "Введите комментарий[необязательно]", replyMarkup: next);
-                //if (State[id].flag)
-                //{
-                //    State[id].ChatState = ChatState.Commenting;
-                //    State[id].result.Answers[State[id].QuestNumb].Result = query.Data;
-                //    await client.EditMessageTextAsync(id, mesId, "Введите комментарий[необязательно]", replyMarkup: next);
-                //    return;
-                //}
-
-                //State[id].answerDto.comment = null;
-                //State[id].answerDto.answer = query.Data;
-                //await client.EditMessageTextAsync(id, mesId, "Введите комментарий[необязательно]", replyMarkup: next);
-                //State[id].ChatState = ChatState.Commenting;
-                
             }
             else if (query.Data == "NextCom")
             {
@@ -258,21 +242,19 @@ namespace TelegramBot
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 await client.SendTextMessageAsync(id, "аппарат:", replyMarkup: release);
             }
+#warning че это за хуйня
             else if (query.Data == "SetRelease")
             {
                 State[id].ChatState = ChatState.Release;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 await client.SendTextMessageAsync(id, "релиз:", replyMarkup: skiprelease);
             }
-            else if (query.Data == "SkipRelease")
+#warning че это за хуйня
+            else if (query.Data == "SkipRelease") 
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 State[id].ChatState = ChatState.AnswersTheQuestion;
-                await client.SendTextMessageAsync(id,
-                    State[id].Questions[State[id].QuestNumb].Question1 +
-                        (!string.IsNullOrEmpty(State[id].Questions[State[id].QuestNumb].Comment) ?
-                        $"\nКомментарий: {State[id].Questions[State[id].QuestNumb].Comment}" : null),
-                    replyMarkup: answer);
+                NextQuestion(client, id, State[id].QuestNumb);
             }
             else if (query.Data == "Tests")
             {
@@ -320,124 +302,32 @@ namespace TelegramBot
                 }
                 await client.SendTextMessageAsync(id, string.Join('\n', file.Errors));
             }
-            else if (query.Data == "gotoYes")
+            else if (query.Data == "NextQuestion")
             {
-                State[id].ChatState = ChatState.AnswersTheQuestion;
-                State[id].flag = true;
-                await client.EditMessageReplyMarkupAsync(id, mesId);
-                await client.SendTextMessageAsync(id,
-                    State[id].Questions[State[id].QuestNumb].Question1 +
-                        (!string.IsNullOrEmpty(State[id].Questions[State[id].QuestNumb].Comment) ?
-                        $"\nКомментарий: {State[id].Questions[State[id].QuestNumb].Comment}" : null),
-                    replyMarkup: answer);
-            }
-            else if (query.Data == "Next")
-            {
-                if (State[id].flag)
+                if (!State[id].SkippedTestsFlag)
                 {
-                    await client.EditMessageReplyMarkupAsync(id, mesId);
-                    //проверка на наличие пропусков
-                    for (int i = ++State[id].QuestNumb; i < State[id].Questions.Count(); i++)
+                    State[id].QuestNumb++;
+                    if (State[id].QuestNumb < State[id].Questions.Count())
                     {
-                        if (State[id].result.Answers[i].Result == "пропуск")
-                        {
-                            State[id].QuestNumb = i;
-                            State[id].ChatState = ChatState.AnswersTheQuestion;
-                            await client.SendTextMessageAsync(id,
-                                State[id].Questions[i].Question1 +
-                                    (!string.IsNullOrEmpty(State[id].Questions[i].Comment) ? $"\nКомментарий: {State[id].Questions[i].Comment}" : null),
-                            replyMarkup: answer);
-                            return;
-                        }
+                        State[id].ChatState = ChatState.AnswersTheQuestion; // <--- просто продолжение прохождение вопросов (не пропущенных)
+                        NextQuestion(client, id, State[id].QuestNumb);
+                        return;
                     }
-                    //переход к пропускам
-                    for (int i = 0; i < State[id].result.Answers.Count(); i++)
-                    {
-                        if (State[id].result.Answers[i].Result == "пропуск")
-                        {
-                            State[id].QuestNumb = i;
-                            await client.SendTextMessageAsync(id, "У вас есть пропуски. Запустить прохождение пропущенных тестов?", replyMarkup: gotoskippedtest);
-                            return;
-                        }
-                    }
-                    await client.SendTextMessageAsync(id, "тест завершен");
-                    var errors = saveResult.Write(State[id].result);
+                }
 
-                    if (errors.Count() != 0)
-                    {
-                        await client.SendTextMessageAsync(id, "не удалось сохранить результат");
-                        string Errors = string.Join("\n", errors);
-                        await client.SendTextMessageAsync(id, $"Ошибки:\n{Errors}");
-                    }
-                    else
-                        await client.SendTextMessageAsync(id, "результат сохранен");
+                var question = GetNumberSkippedQuestion(client, id);
 
-                    State.Remove(id);
+                if (question.HasValue)
+                {
+                    await client.SendTextMessageAsync(id, "Ваш пропуск:");
+                    State[id].QuestNumb = question.Value;
+                    State[id].SkippedTestsFlag = true;
+                    State[id].ChatState = ChatState.AnswersTheQuestion;
+                    NextQuestion(client, id, State[id].QuestNumb);
                     return;
                 }
 
-                ////попадает когда есть пропуски
-                //if (!string.IsNullOrEmpty(State[id].answerDto.answer) && !State[id].flag && !State[id].flag2)
-                //{
-                //    await client.EditMessageReplyMarkupAsync(id, mesId);
-                //    State[id].result.Answers.Add(new()
-                //    {
-                //        Comment = State[id].answerDto.comment,
-                //        Result = State[id].answerDto.answer,
-                //    });
-                //}
-                State[id].QuestNumb++;
-                if (State[id].QuestNumb == State[id].Questions.Count())
-                {
-                    for (int i = 0; i < State[id].result.Answers.Count(); i++)
-                    {
-                        if (State[id].result.Answers[i].Result == "пропуск")
-                        {
-                            State[id].QuestNumb = i;
-                            await client.SendTextMessageAsync(id, "У вас есть пропуски. Запустить прохождение пропущенных тестов?", replyMarkup: gotoskippedtest);
-                            return;
-                        }
-                    }
-
-                    await client.SendTextMessageAsync(id, "тест завершен");
-                    var errors = saveResult.Write(State[id].result);
-
-                    if (errors.Count() != 0)
-                    {
-                        await client.SendTextMessageAsync(id, "не удалось сохранить результат");
-                        string Errors = string.Join("\n", errors);
-                        await client.SendTextMessageAsync(id, $"Ошибки:\n{Errors}");
-                    }
-                    else
-                        await client.SendTextMessageAsync(id, "результат сохранен");
-
-                    State.Remove(id);
-                }
-                else
-                {
-                    State[id].ChatState = ChatState.AnswersTheQuestion;
-                    await client.SendTextMessageAsync(id,
-                        State[id].Questions[State[id].QuestNumb].Question1 +
-                            (State[id].Questions[State[id].QuestNumb].Comment != null ? $"\nКомментарий: {State[id].Questions[State[id].QuestNumb].Comment}" : ""),
-                        replyMarkup: answer);
-                }
-            }
-            else if (query.Data == "Save")
-            {
-                await client.SendTextMessageAsync(id, "тест завершен");
-                await client.EditMessageReplyMarkupAsync(id, mesId);
-                var errors = saveResult.Write(State[id].result);
-
-                if (errors.Count() != 0)
-                {
-                    await client.SendTextMessageAsync(id, "не удалось сохранить результат");
-                    string Errors = string.Join("\n", errors);
-                    await client.SendTextMessageAsync(id, $"Ошибки:\n{Errors}");
-                }
-                else
-                    await client.SendTextMessageAsync(id, "результат сохранен");
-
-                State.Remove(id);
+                SaveTestResult(client, id);
             }
         }
     }

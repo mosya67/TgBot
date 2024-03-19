@@ -20,18 +20,20 @@ namespace TelegramBot
         LastDate,
         Device,
         Release,
+        SkippedQuestion,
     }
 
     public class UserState
     {
-        public int QuestNumb;
+        public ushort QuestNumb;
         public ChatState ChatState;
         public ResultTestDto result;
         public DatesForExcelDTO datesDto;
         public AnswerDto answerDto;
         public IList<Question> Questions;
-        public List<int> deleteButtons = new List<int>();
-        public bool flag;
+        public ushort NumbersSkippedQuestion;
+        public IList<int> deleteButtons = new List<int>();
+        public bool SkippedTestsFlag;
         
         public UserState()
         {

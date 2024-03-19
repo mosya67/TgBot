@@ -25,7 +25,6 @@ namespace Database.AddFunctions
         }
 
 
-#warning изменить ImmutableList<ValidationResult> на исключения
         public IReadOnlyList<ValidationResult> Write(ResultTestDto dto)
         {
             var user = getUser.Get(dto.UserId) ?? new User

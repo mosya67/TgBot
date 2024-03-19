@@ -61,9 +61,9 @@ namespace ExcelServices
             for (int i = 0; i < res.Answers.Count(); i++)
             {
                 var result = res.Answers.ToList()[i].Result;
-                sheet.Cells[row + i, col].Value = result == "да" ? "✅" : result == "нет" ? "❌" : result == "пропуск" ? "➖" : result;
-                if (result == "да") sheet.Cells[row + i, col].Style.Font.Color.SetColor(255, 0, 176, 80);
-                else if (result == "нет") sheet.Cells[row + i, col].Style.Font.Color.SetColor(255, 255, 0 , 0);
+                sheet.Cells[row + i, col].Value = result == "PASS" ? "✅" : result == "BUG" ? "❌" : result;
+                if (result == "PASS") sheet.Cells[row + i, col].Style.Font.Color.SetColor(255, 0, 176, 80);
+                else if (result == "BUG") sheet.Cells[row + i, col].Style.Font.Color.SetColor(255, 255, 0 , 0);
                 sheet.Cells[row + i, col].Style.Fill.PatternType = ExcelFillStyle.Solid;
                 if (i % 2 != 0)
                     sheet.Cells[row + i, col].Style.Fill.BackgroundColor.SetColor(255, 214, 224, 242);

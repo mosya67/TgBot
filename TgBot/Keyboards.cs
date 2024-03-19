@@ -17,16 +17,21 @@ namespace TelegramBot
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("да", "да"),
-                InlineKeyboardButton.WithCallbackData("нет", "нет"),
+                InlineKeyboardButton.WithCallbackData("PASS", "PASS"),
+                InlineKeyboardButton.WithCallbackData("BUG", "BUG"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("не получилось", "не получилось"),
+                InlineKeyboardButton.WithCallbackData("BLOCKER", "BLOCKER"),
+                InlineKeyboardButton.WithCallbackData("NA", "NA"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("пропуск", "пропуск"),
+                InlineKeyboardButton.WithCallbackData("LATER", "LATER"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("PAUSETEST", "PAUSETEST"),
             },
         });
 
@@ -34,7 +39,7 @@ namespace TelegramBot
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("далее", "Next"),
+                InlineKeyboardButton.WithCallbackData("далее", "NextQuestion"),
             }
         });
 
@@ -46,14 +51,13 @@ namespace TelegramBot
             }
         });
 
-        public static InlineKeyboardMarkup gotoskippedtest = new(new[]
-        {
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData("да", "gotoYes"),
-                InlineKeyboardButton.WithCallbackData("нет", "Save"),
-            },
-        });
+        //public static InlineKeyboardMarkup gotoskippedtest = new(new[]
+        //{
+        //    new[]
+        //    {
+        //        InlineKeyboardButton.WithCallbackData("да", "gotoYes"),
+        //    },
+        //});
 
         public static InlineKeyboardMarkup skiprelease = new(new[]
         {

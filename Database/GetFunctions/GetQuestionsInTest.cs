@@ -21,6 +21,7 @@ namespace Database.GetFunctions
 
         public IList<Question> Get(long id)
         {
+#warning подумать над получением не вопросов из теста, а самих вопросов по TestId
             return context.Tests.AsNoTracking().Include(p => p.Questions).SingleOrDefault(x => x.Id == id).Questions.ToList();
         }
     }
