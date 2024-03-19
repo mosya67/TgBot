@@ -75,14 +75,6 @@ namespace TelegramBot
                         context))));
         }
 
-        static async void DeleteButtonsAsync(ITelegramBotClient client, long id)
-        {
-            foreach (var button in State[id].deleteButtons)
-            {
-                await client.EditMessageReplyMarkupAsync(id, button);
-            }
-        }
-
         static async void SaveTestResult(ITelegramBotClient client, long id)
         {
             await client.SendTextMessageAsync(id, "тест завершен"); // <---- попал как только закончились скипнутые вопросы у пользователя
