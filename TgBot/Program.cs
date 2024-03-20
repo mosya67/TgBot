@@ -24,7 +24,7 @@ namespace TelegramBot
     internal partial class Program
     {
         const string token = "6185570726:AAHBPUqL-qMSrmod9YxV6ot3IKrJ3YXzzCc";
-        static string[] _commands = {"/start", "/resetname"};
+        static string[] _commands = {"/start", "/resetname", "1", "2", "3"};
         static Dictionary<long, UserState> State;
 
         static IExcelGenerator<Task<FileDto>, DatesForExcelDTO> excel;
@@ -35,7 +35,7 @@ namespace TelegramBot
 
         static void Main(string[] args)
         {
-            ComponentInitialization(); ScopedComponentInitialization();
+            ComponentInitialization();
 
             var proxy = new WebProxy
             {

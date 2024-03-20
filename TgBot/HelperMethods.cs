@@ -100,19 +100,6 @@ namespace TelegramBot
                         replyMarkup: answer);
         }
 
-        static ushort? GetNumberSkippedQuestion(ITelegramBotClient client, long id)
-        {
-            for (ushort i = 0; i < State[id].result.Answers.Count(); i++)
-            {
-                if (State[id].result.Answers[i].Result == "LATER")
-                {
-                    return i;
-                }
-            }
-
-            return null;
-        }
-
         static ushort? GetNumberSkippedQuestion(ITelegramBotClient client, long id, ushort questNumb)
         {
             for (ushort i = 0; i < State[id].result.Answers.Count(); i++)
@@ -142,6 +129,16 @@ namespace TelegramBot
                 SendSkippedQuestion(client, id, question);
             }
             return question.HasValue;
+        }
+
+        static IEnumerable<T> Page<T>(IEnumerable<T> list, ushort startPage, ushort countPages)
+        {
+            if (list.Count() == 0) return list;
+            if (list == null) throw new ArgumentNullException(nameof(list));
+
+            var newList = list.Skip(startPage);
+
+            return newList.Take(countPages);
         }
     }
 }
