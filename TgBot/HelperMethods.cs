@@ -14,6 +14,9 @@ using System.Runtime.CompilerServices;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using System.Threading.Tasks;
+using Telegram.Bot.Types.ReplyMarkups;
+using TgBot;
+using Domain.Dto;
 
 namespace TelegramBot
 {
@@ -52,9 +55,6 @@ namespace TelegramBot
             getTest = new GetTest(
                 context);
 
-            getUserName = new GetUserName(
-                context);
-
             getSortedTests = new GetSortedTests(
                 context);
 
@@ -62,17 +62,21 @@ namespace TelegramBot
                     context);
 
             saveResult = new AddTestResultInDbWithValidationDecorator(
-                getCountAnswers,
-                new AddTestResultInDbWithValidationDecorator(
                     getCountAnswers,
                     new AddTestResultInDb(
                         new GetCountTestResults(
                             context),
-                    new AddObjectInDb<TestResult>(
-                        context),
+                        new AddObjectInDb<TestResult>(
+                            context),
                     getTest,
                     new GetUser(
-                        context))));
+                        context)));
+
+            getUsersPage = new GetUsersPage(
+                context);
+
+            addNewUser = new AddNewUser(
+                context);
         }
 
         static async void SaveTestResult(ITelegramBotClient client, long id)
@@ -131,14 +135,62 @@ namespace TelegramBot
             return question.HasValue;
         }
 
-        static IEnumerable<T> Page<T>(IEnumerable<T> list, ushort startPage, ushort countPages)
+        static async void ChangeUsersPage(ITelegramBotClient client, long id, int mesId)
         {
-            if (list.Count() == 0) return list;
-            if (list == null) throw new ArgumentNullException(nameof(list));
+            var userPageDto = new UserPageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerUsersPage };
 
-            var newList = list.Skip(startPage);
+            var buttons = GetButtonsFromUsersPage(State[id].NumerUsersPage, getUsersPage.Get(userPageDto).ToList());
 
-            return newList.Take(countPages);
+            await client.EditMessageReplyMarkupAsync(id, mesId, replyMarkup: buttons);
+        }
+
+        static async void DeleteButtons(ITelegramBotClient client, long id)
+        {
+            if (State[id].deleteButtons == null) return;
+
+            foreach (var mesId in State[id].deleteButtons)
+            {
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+            }
+
+            State[id].deleteButtons = null;
+        }
+
+        static InlineKeyboardMarkup GetButtonsFromUsersPage(sbyte numberPage, IList<Domain.Model.User> users)
+        {
+            var buttons = new List<List<InlineKeyboardButton>>();
+            sbyte iterator = 0;
+            for (int i = 0; i < BotSettings.heightButtonsOnMessage; i++)
+            {
+                buttons.Add(new List<InlineKeyboardButton>());
+                for (int j = 0; j < BotSettings.widthButtonsOnMessage; j++, iterator++)
+                {
+                    if (iterator < users.Count())
+                        buttons[i].Add(InlineKeyboardButton.WithCallbackData(users[iterator].Fio, users[iterator].TgId.ToString()));
+                }
+            }
+
+            var addUserButton = new List<InlineKeyboardButton>()
+            {
+                InlineKeyboardButton.WithCallbackData("Добавить", "AddNewUser"),
+            };
+
+            buttons.Add(addUserButton);
+
+            var backAndNextButtons = new List<InlineKeyboardButton>();
+
+            if (numberPage != 0)
+            {
+                backAndNextButtons.Add(InlineKeyboardButton.WithCallbackData("Назад", "LastUsersPage"));
+            }
+
+            if (users.Count() == BotSettings.countElementsInPage)
+            {
+                backAndNextButtons.Add(InlineKeyboardButton.WithCallbackData("Далее", "NextUsersPage"));
+            }
+            buttons.Add(backAndNextButtons);
+
+            return new InlineKeyboardMarkup(buttons);
         }
     }
 }

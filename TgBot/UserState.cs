@@ -13,7 +13,6 @@ namespace TelegramBot
         AnswersTheQuestion,
         Commenting,
         SetFio,
-        SetNewFio,
         CommentForTest,
         AdditionalCommentForTest,
         FirtsDate,
@@ -21,17 +20,21 @@ namespace TelegramBot
         Device,
         Release,
         SkippedQuestion,
+        SelectionUser,
+        AddNewUser,
     }
 
     public class UserState
     {
-        public ushort QuestNumb;
+        public ushort QuestNumb = 0;
         public ChatState ChatState;
         public ResultTestDto result;
         public DatesForExcelDTO datesDto;
         public AnswerDto answerDto;
         public IList<Question> Questions;
-        public bool SkippedTestsFlag;
+        public ICollection<int> deleteButtons;
+        public bool SkippedTestsFlag = false;
+        public sbyte NumerUsersPage = 0;
         
         public UserState()
         {

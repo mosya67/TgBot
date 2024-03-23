@@ -4,6 +4,9 @@ namespace TelegramBot
 {
     internal static class Keyboards
     {
+        public static InlineKeyboardButton lastUsersPage = InlineKeyboardButton.WithCallbackData("назад", "LastUsersPage");
+        public static InlineKeyboardButton nextUsersPage = InlineKeyboardButton.WithCallbackData("далее", "NextUsersPage");
+
         public static InlineKeyboardMarkup start = new(new[]
         {
             new[]
@@ -72,6 +75,14 @@ namespace TelegramBot
             new[]
             {
                 InlineKeyboardButton.WithCallbackData("далее", "NextAdCom"),
+            }
+        });
+
+        public static InlineKeyboardMarkup backToSelectingUser = new(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("назад", "BackToSelectingUser"),
             }
         });
 
