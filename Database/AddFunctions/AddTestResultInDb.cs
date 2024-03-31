@@ -37,14 +37,13 @@ namespace Database.AddFunctions
             {
                 Date = DateTime.Now,
                 User = user,
-#warning изменить получение Test в Program на TestId
                 Test = getTest.Get(dto.Test.Id),
                 Answers = dto.Answers,
                 Id = countTestResults.Get() + 1,
                 Comment = dto.CommentFromTest,
                 AdditionalComment = dto.AdditionalCommentForTest,
                 Apparat = dto.Device,
-                Release = dto.Release,
+                Version = dto.Version,
             };
 
             saveTestResult.Write(result);

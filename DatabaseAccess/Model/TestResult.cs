@@ -8,17 +8,18 @@ namespace Domain.Model
 {
     public partial class TestResult
     {
-        public long Id { get; set; }
+        public int Id { get; set; }
         public DateTime Date { get; set; }
         public string Comment { get; set; }
         public string AdditionalComment { get; set; }
         public string Apparat { get; set; }
-        public string Release { get; set; }
+        public string Version { get; set; }
         public int UserId { get; set; }
+        public byte? PausedQuestionNumber { get; set; }
+        public bool IsPaused { get; set; }
 
         public User User { get; set; }
         public Test Test { get; set; }
-        public PauseTest PauseTest { get; set; }
         public IList<Answer> Answers { get; set; }
     }
 }

@@ -15,7 +15,7 @@ namespace Domain.Dto
         public string CommentFromTest;
         public string AdditionalCommentForTest;
         public string Device;
-        public string Release;
+        public string Version;
         public Test Test;
     }
 }

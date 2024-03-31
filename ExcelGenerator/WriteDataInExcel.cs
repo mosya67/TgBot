@@ -10,7 +10,7 @@ namespace ExcelServices
 {
     internal class WriteDataInExcel
     {
-        private string[] NamesColumnsOfTest = {"Testing date", "Tester", "Comment", "Addit. Comment", "Apparat", "Release"};
+        private string[] NamesColumnsOfTest = {"Testing date", "Tester", "Comment", "Addit. Comment", "Apparat", "Version"};
         internal IStatusGeneric<byte[]> Generate(IList<TestResult> testResults)
         {
             var status = new StatusGenericHandler<byte[]>();
@@ -48,7 +48,7 @@ namespace ExcelServices
             sheet.Cells[3, coloffset].Value = res.Comment;
             sheet.Cells[4, coloffset].Value = res.AdditionalComment;
             sheet.Cells[5, coloffset].Value = res.Apparat;
-            sheet.Cells[6, coloffset].Value = res.Release;
+            sheet.Cells[6, coloffset].Value = res.Version;
             for (int i = 1; i < 7; i++)
             {
                 sheet.Cells[i, coloffset].Style.Fill.PatternType = ExcelFillStyle.Solid;

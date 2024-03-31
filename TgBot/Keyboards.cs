@@ -86,11 +86,11 @@ namespace TelegramBot
             }
         });
 
-        public static InlineKeyboardMarkup release = new(new[]
+        public static InlineKeyboardMarkup backToSelectingDevice = new(new[]
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("далее", "SetRelease"),
+                InlineKeyboardButton.WithCallbackData("назад", "BackToSelectingDevice"),
             }
         });
 

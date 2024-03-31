@@ -17,11 +17,12 @@ namespace TelegramBot
         AdditionalCommentForTest,
         FirtsDate,
         LastDate,
-        Device,
         Release,
         SkippedQuestion,
         SelectionUser,
         AddNewUser,
+        AddNewDevice,
+        SelectionDevice,
     }
 
     public class UserState
@@ -34,7 +35,7 @@ namespace TelegramBot
         public IList<Question> Questions;
         public ICollection<int> deleteButtons;
         public bool SkippedTestsFlag = false;
-        public sbyte NumerUsersPage = 0;
+        public sbyte NumerPage = 0;
         
         public UserState()
         {

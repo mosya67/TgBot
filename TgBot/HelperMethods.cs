@@ -77,6 +77,12 @@ namespace TelegramBot
 
             addNewUser = new AddNewUser(
                 context);
+
+            getDevicesPage = new GetDevicesPage(
+                context);
+
+            addNewDevice = new AddNewDevice(
+                context);
         }
 
         static async void SaveTestResult(ITelegramBotClient client, long id)
@@ -135,11 +141,9 @@ namespace TelegramBot
             return question.HasValue;
         }
 
-        static async void ChangeUsersPage(ITelegramBotClient client, long id, int mesId)
+        static async void ChangePage(ITelegramBotClient client, long id, int mesId, Func<InlineKeyboardMarkup> getButtons)
         {
-            var userPageDto = new UserPageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerUsersPage };
-
-            var buttons = GetButtonsFromUsersPage(State[id].NumerUsersPage, getUsersPage.Get(userPageDto).ToList());
+            var buttons = getButtons.Invoke();
 
             await client.EditMessageReplyMarkupAsync(id, mesId, replyMarkup: buttons);
         }
@@ -156,7 +160,8 @@ namespace TelegramBot
             State[id].deleteButtons = null;
         }
 
-        static InlineKeyboardMarkup GetButtonsFromUsersPage(sbyte numberPage, IList<Domain.Model.User> users)
+        static InlineKeyboardMarkup GetButtonsFromPage<T>(sbyte numberPage, IList<T> items, Func<T, string> ButtonName, Func<T, string> ButtonIdentificator)
+            where T : class
         {
             var buttons = new List<List<InlineKeyboardButton>>();
             sbyte iterator = 0;
@@ -165,14 +170,14 @@ namespace TelegramBot
                 buttons.Add(new List<InlineKeyboardButton>());
                 for (int j = 0; j < BotSettings.widthButtonsOnMessage; j++, iterator++)
                 {
-                    if (iterator < users.Count())
-                        buttons[i].Add(InlineKeyboardButton.WithCallbackData(users[iterator].Fio, users[iterator].TgId.ToString()));
+                    if (iterator < items.Count())
+                        buttons[i].Add(InlineKeyboardButton.WithCallbackData(ButtonName(items[iterator]), ButtonIdentificator(items[iterator])));
                 }
             }
 
             var addUserButton = new List<InlineKeyboardButton>()
             {
-                InlineKeyboardButton.WithCallbackData("Добавить", "AddNewUser"),
+                InlineKeyboardButton.WithCallbackData("Добавить", "AddNew" + typeof(T).Name),
             };
 
             buttons.Add(addUserButton);
@@ -181,12 +186,12 @@ namespace TelegramBot
 
             if (numberPage != 0)
             {
-                backAndNextButtons.Add(InlineKeyboardButton.WithCallbackData("Назад", "LastUsersPage"));
+                backAndNextButtons.Add(InlineKeyboardButton.WithCallbackData("Назад", "Last" + typeof(T).Name + "Page"));
             }
 
-            if (users.Count() == BotSettings.countElementsInPage)
+            if (items.Count() == BotSettings.countElementsInPage)
             {
-                backAndNextButtons.Add(InlineKeyboardButton.WithCallbackData("Далее", "NextUsersPage"));
+                backAndNextButtons.Add(InlineKeyboardButton.WithCallbackData("Далее", "Next" + typeof(T).Name + "Page"));
             }
             buttons.Add(backAndNextButtons);
 

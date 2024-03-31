@@ -1,6 +1,6 @@
 ﻿namespace Domain.Dto
 {
-    public class UserPageDto
+    public class PageDto
     {
         public sbyte startPage;
         public sbyte countElementsInPage;

@@ -8,7 +8,5 @@ namespace Domain.Model
         public int UserId { get; set; }
         public long TgId { get; set; }
         public string Fio { get; set; }
-
-        public IList<PauseTest> PauseTests { get; set; }
     }
 }

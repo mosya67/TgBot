@@ -20,14 +20,13 @@ namespace Database.Db
         public DbSet<Test> Tests { get; set; }
         public DbSet<TestResult> TestResults { get; set; }
         public DbSet<User> Users { get; set; }
-        public DbSet<PauseTest> PauseTests { get; set; }
         public DbSet<Device> Devices { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlite("Data Source=db.db");
+                optionsBuilder.UseSqlite("Data Source=C:\\Users\\admin\\source\\repos\\TgBot\\TgBot\\bin\\Debug\\net5.0\\db.db");
             }
         }
 
@@ -38,7 +37,6 @@ namespace Database.Db
             modelBuilder.ApplyConfiguration(new TestConf());
             modelBuilder.ApplyConfiguration(new TestResultConf());
             modelBuilder.ApplyConfiguration(new UserConf());
-            modelBuilder.ApplyConfiguration(new PauseTestConf());
 
             OnModelCreatingPartial(modelBuilder);
         }
