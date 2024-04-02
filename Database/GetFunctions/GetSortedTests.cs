@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetSortedTests : IGetCommand<IList<Test>>
+    public class GetSortedTests : IGetCommand<Task<IList<Test>>>
     {
         readonly Context context;
 
@@ -19,9 +19,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public IList<Test> Get()
+        public async Task<IList<Test>> Get()
         {
-            return context.Tests.AsNoTracking().OrderByDescending(p => p.Date.Date).ToList();
+            return await context.Tests.AsNoTracking().OrderByDescending(p => p.Date.Date).ToListAsync();
         }
     }
 }

@@ -94,6 +94,18 @@ namespace TelegramBot
             }
         });
 
+        public static InlineKeyboardMarkup changeQuestionsAndLogin = new(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("редактировать", "ChangeQuestions"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("войти", "Login"),
+            }
+        });
+
         public static InlineKeyboardMarkup skipfdate = new(new[]
         {
             new[]

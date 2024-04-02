@@ -82,7 +82,7 @@ namespace Database.Migrations
                     Apparat = table.Column<string>(type: "TEXT", nullable: true),
                     Release = table.Column<string>(type: "TEXT", nullable: true),
                     UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    PausedQuestionNumber = table.Column<byte>(type: "INTEGER", nullable: true),
+                    PausedQuestionNumber = table.Column<sbyte>(type: "INTEGER", nullable: true),
                     IsPaused = table.Column<bool>(type: "INTEGER", nullable: false),
                     TestId = table.Column<ushort>(type: "INTEGER", nullable: true)
                 },

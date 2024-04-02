@@ -1,4 +1,5 @@
 ﻿using Database.Db;
+using Domain.Model;
 using Domain;
 using System;
 using System.Collections.Generic;
@@ -8,20 +9,19 @@ using System.Threading.Tasks;
 
 namespace Database.AddFunctions
 {
-    public class AddObjectInDb<TIn> : IWriteCommand<TIn>
+    public class UpdateTest : IWriteCommand<Task, Test>
     {
         readonly Context context;
 
-        public AddObjectInDb(Context context)
+        public UpdateTest(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public void Write(TIn _object)
+        public async Task Write(Test test)
         {
-            context.Add(_object);
-
-            context.SaveChanges();
+            context.Tests.Update(test);
+            await context.SaveChangesAsync();
         }
     }
 }

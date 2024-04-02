@@ -10,22 +10,22 @@ using System.Threading.Tasks;
 
 namespace Database.AddFunctions
 {
-    public class AddTestResultInDbWithValidationDecorator : IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto>
+    public class AddTestResultInDbWithValidationDecorator : IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto>
     {
-        readonly IGetCommand<int> countAnswers;
-        readonly IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto> saveTestResult;
+        readonly IGetCommand<Task<int>> countAnswers;
+        readonly IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveTestResult;
 
-        public AddTestResultInDbWithValidationDecorator(IGetCommand<int> countAnswers, IWriteCommand<IReadOnlyList<ValidationResult>, ResultTestDto> saveTestResult)
+        public AddTestResultInDbWithValidationDecorator(IGetCommand<Task<int>> countAnswers, IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveTestResult)
         {
             this.countAnswers = countAnswers ?? throw new ArgumentNullException(nameof(countAnswers));
             this.saveTestResult = saveTestResult ?? throw new ArgumentNullException(nameof(saveTestResult));
         }
 
-        public IReadOnlyList<ValidationResult> Write(ResultTestDto dto)
+        public async Task<IReadOnlyList<ValidationResult>> Write(ResultTestDto dto)
         {
             List<ValidationResult> _errors = new List<ValidationResult>();
 
-            var _countAnswers = countAnswers.Get();
+            var _countAnswers = await countAnswers.Get();
             var valContext = new ValidationContext(dto);
 
             Validator.TryValidateObject(dto, valContext, _errors, true);
@@ -38,7 +38,7 @@ namespace Database.AddFunctions
 
             if (_errors.Count() == 0)
             {
-                saveTestResult.Write(dto);
+                await saveTestResult.Write(dto);
             }
 
             return _errors;

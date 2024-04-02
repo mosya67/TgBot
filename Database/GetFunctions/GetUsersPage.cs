@@ -11,7 +11,7 @@ using Database.Db;
 
 namespace Database.GetFunctions
 {
-    public class GetUsersPage : IGetCommand<IEnumerable<User>, PageDto>
+    public class GetUsersPage : IGetCommand<Task<IEnumerable<User>>, PageDto>
     {
         readonly Context context;
 
@@ -20,9 +20,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public IEnumerable<User> Get(PageDto dto)
+        public async Task<IEnumerable<User>> Get(PageDto dto)
         {
-            return context.Users.Skip(dto.startPage * dto.countElementsInPage).Take(dto.countElementsInPage);
+            return await context.Users.Skip(dto.startPage * dto.countElementsInPage).Take(dto.countElementsInPage).ToListAsync();
         }
     }
 }

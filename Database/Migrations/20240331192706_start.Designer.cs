@@ -131,7 +131,7 @@ namespace Database.Migrations
                     b.Property<bool>("IsPaused")
                         .HasColumnType("INTEGER");
 
-                    b.Property<byte?>("PausedQuestionNumber")
+                    b.Property<sbyte?>("PausedQuestionNumber")
                         .HasColumnType("INTEGER");
 
                     b.Property<ushort?>("TestId")

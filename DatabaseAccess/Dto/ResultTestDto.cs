@@ -17,5 +17,9 @@ namespace Domain.Dto
         public string Device;
         public string Version;
         public Test Test;
+        public sbyte? PausedQuestionNumber;
+        public bool IsPaused;
+
+        public int TestResultId;
     }
 }

@@ -4,10 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetCountQuestionsInTest : IGetCommand<sbyte, long>
+    public class GetCountQuestionsInTest : IGetCommand<Task<sbyte>, long>
     {
         readonly Context context;
 
@@ -16,9 +17,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public sbyte Get(long testId)
+        public async Task<sbyte> Get(long testId)
         {
-            return (sbyte)context.Questions.AsNoTracking().Where(p => p.Test.Id == testId).Count();
+            return  (sbyte)await context.Questions.AsNoTracking().Where(p => p.Test.Id == testId).CountAsync();
         }
     }
 }

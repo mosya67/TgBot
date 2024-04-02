@@ -11,7 +11,7 @@ using Database.Db;
 
 namespace Database.GetFunctions
 {
-    public class GetUser : IGetCommand<User, long>
+    public class GetUser : IGetCommand<Task<User>, long>
     {
         readonly Context context;
 
@@ -20,9 +20,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public User Get(long id)
+        public async Task<User> Get(long id)
         {
-            return context.Users.SingleOrDefault(e => e.TgId == id);
+            return await context.Users.SingleOrDefaultAsync(e => e.TgId == id);
         }
     }
 }

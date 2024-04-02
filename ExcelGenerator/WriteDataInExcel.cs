@@ -77,7 +77,7 @@ namespace ExcelServices
         {
             for (int i = 0; i < res.Answers.Count(); i++)
             {
-                sheet.Cells[row + i, col].Value = res.Test.Questions.ToArray()[i].Question1;
+                sheet.Cells[row + i, col].Value = res.Test.Questions.ToArray()[i].question;
                 sheet.Cells[row + i, col].Style.Fill.PatternType = ExcelFillStyle.Solid;
                 if (i % 2 != 0)
                     sheet.Cells[row + i, col].Style.Fill.BackgroundColor.SetColor(255, 159, 183, 225);

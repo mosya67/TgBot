@@ -1,6 +1,5 @@
 ﻿using Database.Db;
 using Domain;
-using Domain.Dto;
 using Domain.Model;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -11,18 +10,17 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetDevicesPage : IGetCommand<Task<IEnumerable<Device>>, PageDto>
+    public class GetTestResult : IGetCommand<Task<TestResult>, int>
     {
         readonly Context context;
 
-        public GetDevicesPage(Context context)
+        public GetTestResult(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
-
-        public async Task<IEnumerable<Device>> Get(PageDto dto)
+        public async Task<TestResult> Get(int id)
         {
-            return await context.Devices.Skip(dto.startPage * dto.countElementsInPage).Take(dto.countElementsInPage).ToListAsync();
+            return await context.TestResults.Include(e => e.Answers).Include(e => e.Test).AsNoTracking().SingleOrDefaultAsync(e => e.Id == id);
         }
     }
 }

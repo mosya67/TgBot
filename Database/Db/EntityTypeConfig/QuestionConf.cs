@@ -8,7 +8,7 @@ namespace Database.Db.EntityTypeConfig
     {
         public void Configure(EntityTypeBuilder<Question> entity)
         {
-            entity.Property(e => e.Question1)
+            entity.Property(e => e.question)
                 .IsRequired()
                 .HasMaxLength(64)
                 .HasColumnName("Question");

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Database.AddFunctions
 {
-    public class AddNewDevice : IWriteCommand<string>
+    public class AddNewDevice : IWriteCommand<Task, string>
     {
         readonly Context context;
 
@@ -18,10 +18,10 @@ namespace Database.AddFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public void Write(string nickname)
+        public async Task Write(string nickname)
         {
-            context.Devices.Add(new Device() { Name = nickname});
-            context.SaveChanges();
+            await context.Devices.AddAsync(new Device() { Name = nickname });
+            await context.SaveChangesAsync();
         }
     }
 }

@@ -11,18 +11,18 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetDevicesPage : IGetCommand<Task<IEnumerable<Device>>, PageDto>
+    public class GetTestPage : IGetCommand<Task<IEnumerable<Test>>, PageDto>
     {
         readonly Context context;
 
-        public GetDevicesPage(Context context)
+        public GetTestPage(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<IEnumerable<Device>> Get(PageDto dto)
+        public async Task<IEnumerable<Test>> Get(PageDto dto)
         {
-            return await context.Devices.Skip(dto.startPage * dto.countElementsInPage).Take(dto.countElementsInPage).ToListAsync();
+            return await context.Tests.Skip(dto.startPage * dto.countElementsInPage).Take(dto.countElementsInPage).ToListAsync();
         }
     }
 }

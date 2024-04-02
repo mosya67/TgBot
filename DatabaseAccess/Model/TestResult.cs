@@ -15,7 +15,7 @@ namespace Domain.Model
         public string Apparat { get; set; }
         public string Version { get; set; }
         public int UserId { get; set; }
-        public byte? PausedQuestionNumber { get; set; }
+        public sbyte? PausedQuestionNumber { get; set; }
         public bool IsPaused { get; set; }
 
         public User User { get; set; }

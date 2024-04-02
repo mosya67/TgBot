@@ -9,7 +9,7 @@ using Database.Db;
 
 namespace Database.GetFunctions
 {
-    public class GetUserName : IGetCommand<string, long>
+    public class GetUserName : IGetCommand<Task<string>, long>
     {
         readonly Context context;
 
@@ -18,9 +18,10 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public string Get(long Id)
+        public async Task<string> Get(long Id)
         {
-            return context.Users.AsNoTracking().SingleOrDefault(e => e.TgId == Id)?.Fio;
+            var user = await context.Users.AsNoTracking().SingleOrDefaultAsync(e => e.TgId == Id);
+            return user?.Fio;
         }
     }
 }

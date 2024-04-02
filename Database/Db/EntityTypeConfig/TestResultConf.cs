@@ -22,7 +22,6 @@ namespace Database.Db.EntityTypeConfig
 
             entity.Property(e => e.Comment).HasMaxLength(128);
 
-#warning временная мера до изменения базы данных
             entity.Property(e => e.Version).HasColumnName("Release");
         }
     }

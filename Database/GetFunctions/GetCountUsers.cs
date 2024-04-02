@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetCountUsers : IGetCommand<int>
+    public class GetCountUsers : IGetCommand<Task<int>>
     {
         readonly Context context;
 
@@ -18,9 +18,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public int Get()
+        public async Task<int> Get()
         {
-            return context.Users.AsNoTracking().Count();
+            return await context.Users.AsNoTracking().CountAsync();
         }
     }
 }

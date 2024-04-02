@@ -23,24 +23,26 @@ namespace TelegramBot
         AddNewUser,
         AddNewDevice,
         SelectionDevice,
+        SelectingStoppedTest,
+        ChangeTest,
     }
 
     public class UserState
     {
-        public ushort QuestNumb = 0;
+        public sbyte QuestNumb = 0;
         public ChatState ChatState;
         public ResultTestDto result;
         public DatesForExcelDTO datesDto;
-        public AnswerDto answerDto;
         public IList<Question> Questions;
         public ICollection<int> deleteButtons;
         public bool SkippedTestsFlag = false;
         public sbyte NumerPage = 0;
-        
+        public bool PassingStoppedTest = false;
+        public int ResultId;
+
         public UserState()
         {
             result = new();
-            answerDto = new();
             datesDto = new();
         }
     }

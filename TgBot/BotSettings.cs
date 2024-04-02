@@ -15,5 +15,7 @@ namespace TgBot
         public const sbyte heightButtonsOnMessage = 2;
 
         public const sbyte countElementsInPage = widthButtonsOnMessage * heightButtonsOnMessage;
+
+        public const string token = "6185570726:AAHBPUqL-qMSrmod9YxV6ot3IKrJ3YXzzCc";
     }
 }

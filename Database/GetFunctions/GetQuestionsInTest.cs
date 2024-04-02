@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Database.GetFunctions
 {
-    public class GetQuestionsInTest : IGetCommand<IList<Question>, long>
+    public class GetQuestionsInTest : IGetCommand<Task<IList<Question>>, long>
     {
         readonly Context context;
 
@@ -19,10 +19,10 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public IList<Question> Get(long id)
+        public async Task<IList<Question>> Get(long id)
         {
-#warning подумать над получением не вопросов из теста, а самих вопросов по TestId
-            return context.Tests.AsNoTracking().Include(p => p.Questions).SingleOrDefault(x => x.Id == id).Questions.ToList();
+            var test = await context.Tests.AsNoTracking().Include(p => p.Questions).SingleOrDefaultAsync(x => x.Id == id);
+            return test.Questions.ToList();
         }
     }
 }

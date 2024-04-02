@@ -6,10 +6,11 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetDataForGeneratingReport : IGetCommand<IList<TestResult>, DatesForExcelDTO>
+    public class GetDataForGeneratingReport : IGetCommand<Task<IList<TestResult>>, DatesForExcelDTO>
     {
         readonly Context context;
 
@@ -18,7 +19,7 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public IList<TestResult> Get(DatesForExcelDTO dates)
+        public async Task<IList<TestResult>> Get(DatesForExcelDTO dates)
         {
             var results = context.TestResults
                     .Include(p => p.Answers)
@@ -40,7 +41,7 @@ namespace Database.GetFunctions
                 results.Where(e => e.Date.Date >= dates.fdate.Value.Date && e.Date.Date <= dates.ldate.Value.Date);
             }
 
-            return results.ToList();
+            return await results.ToListAsync();
         }
     }
 }
