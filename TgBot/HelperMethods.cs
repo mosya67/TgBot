@@ -87,6 +87,8 @@ namespace TelegramBot
             changeTest = new ChangeTest(new UpdateTest(context));
 
             getTestPage = new GetTestPage(context);
+
+            getLastresult = new GetLastResult(context);
         }
 
         static async void SaveTestResult(ITelegramBotClient client, long id)
@@ -187,6 +189,14 @@ namespace TelegramBot
             await client.SendTextMessageAsync(id, "остановленные тестирования:" + '\n' + testNamesAndDate, replyMarkup: buttons);
             State[id].ChatState = ChatState.SelectingStoppedTest;
             return true;
+        }
+
+        static async Task<string> GetResult(IEnumerable<Answer> items)
+        {
+            var res = items.FirstOrDefault(e => e.Result == "PASS");
+
+            if (res == null) return "Pass";
+            return "Failed";
         }
 
         static bool CheckSkippedQuestion(ITelegramBotClient client, long id, sbyte questNumb)

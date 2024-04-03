@@ -36,6 +36,7 @@ namespace TelegramBot
         static IWriteCommand<Task, Stream> changeTest;
         static IWriteCommand<Task, string> addNewDevice;
         static IGetCommand<Task<Test>, ushort> getTest;
+        static IGetCommand<Task<TestResult>, ushort> getLastresult;
         static IGetCommand<Task<IEnumerable<Test>>, PageDto> getTestPage;
         static IWriteCommand<Task, string> addNewUser;
 
@@ -375,6 +376,9 @@ namespace TelegramBot
             {
                 State[id].NumerPage = 0;
                 CheckTest(client, id, testid, 0, mesId);
+                var lastResult = await getLastresult.Get(testid);
+                string res = await GetResult(lastResult.Answers);
+                await client.SendTextMessageAsync(id, $"Ver {lastResult.Version}: {res}");
                 var msg = await client.SendTextMessageAsync(id, "вы можете изменить тест или начать тестирование", replyMarkup: changeQuestionsAndLogin);
                 State[id].deleteButtons = new List<int>{msg.MessageId};
             }
