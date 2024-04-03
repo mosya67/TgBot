@@ -21,7 +21,7 @@ namespace Database.GetFunctions
 
         public async Task<TestResult> Get(ushort testId)
         {
-            return await context.TestResults.Where(e => !e.IsPaused && e.Test.Id == testId).OrderByDescending(e => e.Date).FirstOrDefaultAsync();
+            return await context.TestResults.AsNoTracking().Include(e => e.Test).Include(e => e.Answers).Where(e => !e.IsPaused && e.Test.Id == testId).OrderByDescending(e => e.Date).FirstOrDefaultAsync();
         }
     }
 }

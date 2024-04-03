@@ -65,6 +65,7 @@ namespace Database.AddFunctions
                 Version = dto.Version,
                 IsPaused = dto.IsPaused,
                 PausedQuestionNumber = dto.PausedQuestionNumber,
+                TestVersionId = dto.TestVersionId,
             };
 
             await context.AddAsync(result);

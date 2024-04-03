@@ -21,5 +21,6 @@ namespace Domain.Dto
         public bool IsPaused;
 
         public int TestResultId;
+        public uint TestVersionId;
     }
 }

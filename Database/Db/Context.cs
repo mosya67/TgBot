@@ -10,9 +10,7 @@ namespace Database.Db
     {
         public Context()
         {
-#if DEBUG
             Database.EnsureCreated();
-#endif
         }
 
         public DbSet<Answer> Answers { get; set; }
@@ -21,6 +19,7 @@ namespace Database.Db
         public DbSet<TestResult> TestResults { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Device> Devices { get; set; }
+        public DbSet<TestVersion> TestVersions { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

@@ -15,6 +15,8 @@ using TgBot;
 using Domain.Dto;
 using Domain;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Numeric;
+using System.IO;
 
 namespace TelegramBot
 {
@@ -52,7 +54,7 @@ namespace TelegramBot
 
             getTest = new GetTest(context);
 
-            getSortedTests = new GetSortedTests(context);
+            AddTest = new AddTest(context);
 
             var getCountAnswers = new GetCountAnswers(context);
 
@@ -84,7 +86,8 @@ namespace TelegramBot
 
             getTestJson = new GetTestJson(getTest);
 
-            changeTest = new ChangeTest(new UpdateTest(context));
+            changeTest = new ChangeTest(new UpdateTest(new GetTest(context),
+                context));
 
             getTestPage = new GetTestPage(context);
 
@@ -145,20 +148,40 @@ namespace TelegramBot
             NextQuestion(client, id, State[id].QuestNumb);
         }
 
-        static async void ViewTests(ITelegramBotClient client, long id, int mesId, IEnumerable<Test> tests)
+        static async Task SendAndDeleteDocument(ITelegramBotClient client, long id, string path)
         {
-            await client.EditMessageReplyMarkupAsync(id, mesId);
-            var testNamesAndDate = string.Join("\n", tests.Select(p => $"{p.Name}   {p.Date.ToShortDateString()}"));
+            await Task.Run(async () =>
+            {
+                using (Stream str = File.OpenRead(path))
+                {
+                    await client.SendDocumentAsync(id, new(str, Path.GetFileName(path)));
+                }
+            }).ContinueWith(e =>
+            {
+                File.Delete(path);
+            });
+        }
+
+        static async void ViewTests(ITelegramBotClient client, long id, int mesId, IEnumerable<Test> tests, bool isEdit = true)
+        {
+            if (isEdit) await client.EditMessageReplyMarkupAsync(id, mesId);
+            var testNamesAndDate = string.Join("\n", tests.Select(p => $"{p.Id} {p.Name}   {p.Date.ToShortDateString()}"));
+            var buttons = GetButtonsFromPageToSelectTest(0, tests.ToList(), e => e.Id.ToString(), e => e.Id.ToString());
+            if (tests.Count() == 0)
+            {
+                await client.SendTextMessageAsync(id, "Тестов нет", replyMarkup: buttons);
+                return;
+            }
             await client.SendTextMessageAsync(id, testNamesAndDate);
-            var buttons = GetButtonsFromPageToSelectTest(0, tests.ToList(), e => e.Name, e => e.Id.ToString());
             await client.SendTextMessageAsync(id, "выберете тест", replyMarkup: buttons);
             State[id].ChatState = ChatState.SelectingTest;
         }
 
-        static async void CheckTest(ITelegramBotClient client, long id, ushort testid, sbyte questNumb, int mesId)
+        static async Task CheckTest(ITelegramBotClient client, long id, ushort testid, sbyte questNumb, int mesId)
         {
             await client.EditMessageReplyMarkupAsync(id, mesId);
             var test = await getTest.Get(testid);
+            State[id].result.TestVersionId = test.TestVersionId;
             if (test == null)
             {
                 await client.SendTextMessageAsync(id, "вы выбрали не существующий тест");
@@ -193,7 +216,9 @@ namespace TelegramBot
 
         static async Task<string> GetResult(IEnumerable<Answer> items)
         {
-            var res = items.FirstOrDefault(e => e.Result == "PASS");
+            if (items == null) return null;
+
+            var res = items.FirstOrDefault(e => e.Result != "PASS");
 
             if (res == null) return "Pass";
             return "Failed";
@@ -293,6 +318,8 @@ namespace TelegramBot
             }
 
             var backAndNextButtons = new List<InlineKeyboardButton>();
+
+            AddButton<T>(ref buttons, "Добавить");
 
             AddLastButton<T>(numberPage, ref backAndNextButtons);
 

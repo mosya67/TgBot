@@ -16,6 +16,11 @@ using Domain.Model;
 using System.ComponentModel.DataAnnotations;
 using TgBot;
 using File = System.IO.File;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
+using Newtonsoft.Json;
+using Database.AddFunctions;
+using Database.Db;
+using Microsoft.EntityFrameworkCore;
 
 namespace TelegramBot
 {
@@ -28,19 +33,19 @@ namespace TelegramBot
         static IGetCommand<Task<IEnumerable<Domain.Model.User>>, PageDto> getUsersPage;
         static IGetCommand<Task<IEnumerable<TestResult>>, long> getStoppedTest;
         static IGetCommand<Task<IEnumerable<Device>>, PageDto> getDevicesPage;
+        static IGetCommand<Task<IEnumerable<Test>>, PageDto> getTestPage;
         static IExcelGenerator<Task<FileDto>, DatesForExcelDTO> excel;
         static IWriteCommand<Task, UpdateResultDto> updateTestResult;
+        static IGetCommand<Task<TestResult>, ushort> getLastresult;
         static IGetCommand<Task<TestResult>, int> getTestResult;
-        static IGetCommand<Task<IList<Test>>> getSortedTests;
         static IGetCommand<Task<string>, ushort> getTestJson;
-        static IWriteCommand<Task, Stream> changeTest;
         static IWriteCommand<Task, string> addNewDevice;
         static IGetCommand<Task<Test>, ushort> getTest;
-        static IGetCommand<Task<TestResult>, ushort> getLastresult;
-        static IGetCommand<Task<IEnumerable<Test>>, PageDto> getTestPage;
+        static IWriteCommand<Task, Stream> changeTest;
         static IWriteCommand<Task, string> addNewUser;
+        static IWriteCommand<Task, Test> AddTest;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             ComponentInitialization();
 
@@ -77,7 +82,7 @@ namespace TelegramBot
         private static Task Error<T>(ITelegramBotClient client, T ex, CancellationToken token)
             where T : Exception
         {
-            string message = '\n' + ex.GetType().Name + '\n' + ex.Message + '\n' + ex.StackTrace;
+            string message = '\n' + ex.GetType().Name + '\n' + ex.Message + '\n' + ex.InnerException?.Message + '\n' + ex.StackTrace;
             Console.WriteLine(message);
             throw new Exception(message);
         }
@@ -97,6 +102,23 @@ namespace TelegramBot
                 await client.SendTextMessageAsync(id, "вы можете выбрать тест или получить отчеты", replyMarkup: start);
                 return;
             }
+#if DEBUG
+            else if (message?.Text?.ToLower() == "/s")
+            {
+                var c = new Context();
+                var vers = c.TestVersions.Include(e => e.Questions).ToList();
+
+                foreach (var i in vers)
+                {
+                    var test = await getTest.Get(i.TestId);
+                    Console.WriteLine($"{test.Name} {i.DateCreated}");
+                    foreach (var q in i.Questions)
+                    {
+                        Console.WriteLine($"    {q.question}");
+                    }
+                }
+            }
+#endif
             else if (State[id].ChatState == ChatState.SetFio)
             {
                 State[id].result.UserName = message.Text;
@@ -183,6 +205,36 @@ namespace TelegramBot
             {
                 State[id].result.Version = message.Text;
             }
+            else if (State[id].ChatState == ChatState.AddTest && message.Type == MessageType.Document)
+            {
+                var file = await client.GetFileAsync(message.Document.FileId);
+
+                using (var stream = new MemoryStream())
+                {
+                    await client.DownloadFileAsync(file.FilePath, stream);
+
+                    try
+                    {
+                        stream.Position = 0;
+                        using (var reader = new StreamReader(stream))
+                        {
+                            string jsonContent = await reader.ReadToEndAsync();
+
+                            var test = JsonConvert.DeserializeObject<Test>(jsonContent);
+
+                            await AddTest.Write(test);
+                        }
+                        await client.SendTextMessageAsync(id, $"готово");
+                        State[id].result.Answers = new List<Answer>();
+                        var tests = await getTestPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
+                        ViewTests(client, id, message.MessageId, tests, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        await client.SendTextMessageAsync(id, $"не удалось запарсить файл\n" + ex.Message + '\n' + ex.InnerException?.Message);
+                    }
+                }
+            }
             else if (State[id].ChatState == ChatState.ChangeTest && message.Type == MessageType.Document)
             {
                 var file = await client.GetFileAsync(message.Document.FileId);
@@ -191,8 +243,20 @@ namespace TelegramBot
                 {
                     await client.DownloadFileAsync(file.FilePath, stream);
 
-                    await changeTest.Write(stream);
+                    try
+                    {
+                        await changeTest.Write(stream);
+                        await client.SendTextMessageAsync(id, $"готово");
+                        State[id].result.Answers = new List<Answer>();
+                        var tests = await getTestPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
+                        ViewTests(client, id, message.MessageId, tests, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        await client.SendTextMessageAsync(id, $"не удалось запарсить файл\n" + ex.Message + '\n' + ex.InnerException?.Message);
+                    }
                 }
+
             }
         }
 
@@ -268,15 +332,7 @@ namespace TelegramBot
                 State[id].result.Answers = new List<Answer>();
                 var tests = await getTestPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
 
-                if (tests.Count() == 0)
-                {
-                    await client.EditMessageTextAsync(id, mesId, "тестов нет");
-                    return;
-                }
-                else
-                {
-                    ViewTests(client, id, mesId, tests);
-                }
+                ViewTests(client, id, mesId, tests);
             }
             else if (query.Data == "Reports")
             {
@@ -284,27 +340,29 @@ namespace TelegramBot
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 await client.SendTextMessageAsync(id, "начальная дата:", replyMarkup: skipfdate);
             }
-            else if (query.Data == "SkipFirstDate")
-            {
-                await client.EditMessageReplyMarkupAsync(id, mesId);
-                State[id].ChatState = ChatState.LastDate;
-                await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
-            }
-            else if (query.Data == "SkipLastDate")
-            {
-                await client.EditMessageReplyMarkupAsync(id, mesId);
-                var file = await excel.WriteResultsAsync(State[id].datesDto);
-                if (file.Errors == null)
-                {
-                    using (Stream str = File.OpenRead(file.PathName))
-                    {
-                        await client.SendDocumentAsync(id, new(str, Path.GetFileName(file.PathName)));
-                    }
-                    State[id].ChatState = ChatState.None;
-                    return;
-                }
-                await client.SendTextMessageAsync(id, string.Join('\n', file.Errors));
-            }
+            #region
+            //else if (query.Data == "SkipFirstDate")
+            //{
+            //    await client.EditMessageReplyMarkupAsync(id, mesId);
+            //    State[id].ChatState = ChatState.LastDate;
+            //    await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
+            //}
+            //else if (query.Data == "SkipLastDate")
+            //{
+            //    await client.EditMessageReplyMarkupAsync(id, mesId);
+            //    var file = await excel.WriteResultsAsync(State[id].datesDto);
+            //    if (file.Errors == null)
+            //    {
+            //        using (Stream str = File.OpenRead(file.PathName))
+            //        {
+            //            await client.SendDocumentAsync(id, new(str, Path.GetFileName(file.PathName)));
+            //        }
+            //        State[id].ChatState = ChatState.None;
+            //        return;
+            //    }
+            //    await client.SendTextMessageAsync(id, string.Join('\n', file.Errors));
+            //}
+            #endregion
             else if (query.Data == "BackToSelectingUser")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
@@ -318,16 +376,7 @@ namespace TelegramBot
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 var path = await getTestJson.Get(State[id].result.Test.Id);
 
-                await Task.Run(async () =>
-                {
-                    using (Stream str = File.OpenRead(path))
-                    {
-                        await client.SendDocumentAsync(id, new(str, Path.GetFileName(path)));
-                    }
-                }).ContinueWith(e =>
-                {
-                    File.Delete(path);
-                });
+                await SendAndDeleteDocument(client, id, path);
                 State[id].ChatState = ChatState.ChangeTest;
             }
             else if (query.Data == "Login")
@@ -372,21 +421,55 @@ namespace TelegramBot
                 var buttons = GetButtonsFromPageToSelectTest(State[id].NumerPage, page.ToList(), e => e.Name, e => e.Id.ToString());
                 ChangePage(client, id, mesId, () => buttons);
             }
+            else if (query.Data == "AddNewTest")
+            {
+                var test = new Test()
+                {
+                    Date = DateTime.Now,
+                    Name = "имя(обязательно)",
+                    Questions = new List<Question>
+                    {
+                        new Question{ },
+                        new Question{ },
+                    }
+                };
+
+                var settings = new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    Formatting = Formatting.Indented
+                };
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+                string json = JsonConvert.SerializeObject(test, settings);
+                var path = "C:\\Users\\admin\\source\\repos\\TgBot\\TgBot\\bin\\Debug\\net5.0\\" + new Random().Next().ToString() + ".json";
+                await File.WriteAllTextAsync(path, json);
+                await client.SendTextMessageAsync(id, "заполните шаблон и отправьте мне");
+                await SendAndDeleteDocument(client, id, path);
+                State[id].ChatState = ChatState.AddTest;
+
+            }
             else if (State[id].ChatState == ChatState.SelectingTest && ushort.TryParse(query?.Data, out testid))
             {
                 State[id].NumerPage = 0;
-                CheckTest(client, id, testid, 0, mesId);
+                await CheckTest(client, id, testid, 0, mesId);
                 var lastResult = await getLastresult.Get(testid);
-                string res = await GetResult(lastResult.Answers);
-                await client.SendTextMessageAsync(id, $"Ver {lastResult.Version}: {res}");
+#warning поправить (если было 2 или < то NA, а у меня проверка на null просто)
+                if (lastResult is null)
+                    await client.SendTextMessageAsync(id, $"Ver NA:");
+                else
+                {
+                    string res = null;
+                    res = await GetResult(lastResult.Answers);
+                    await client.SendTextMessageAsync(id, $"Ver {lastResult.Version}: {res}");
+                }
                 var msg = await client.SendTextMessageAsync(id, "вы можете изменить тест или начать тестирование", replyMarkup: changeQuestionsAndLogin);
-                State[id].deleteButtons = new List<int>{msg.MessageId};
+                State[id].deleteButtons = new List<int> { msg.MessageId };
             }
             else if (State[id].ChatState == ChatState.SelectingStoppedTest && int.TryParse(query.Data, out State[id].ResultId))
             {
                 State[id].PassingStoppedTest = true;
                 var testResult = await getTestResult.Get(State[id].ResultId);
-                CheckTest(client, id, testResult.Test.Id, testResult.PausedQuestionNumber.Value, mesId);
+                await CheckTest(client, id, testResult.Test.Id, testResult.PausedQuestionNumber.Value, mesId);
                 State[id].result.Answers = testResult.Answers;
                 State[id].ChatState = ChatState.AnswersTheQuestion;
                 NextQuestion(client, id, State[id].QuestNumb);

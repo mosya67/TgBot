@@ -16,5 +16,7 @@ namespace Domain.Model
         [JsonIgnore]
         public IList<TestResult> TestResult { get; set; }
         public IList<Question> Questions { get; set; }
+        [JsonIgnore]
+        public uint TestVersionId { get; set; }
     }
 }
