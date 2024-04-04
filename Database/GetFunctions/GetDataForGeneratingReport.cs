@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetDataForGeneratingReport : IGetCommand<Task<IList<TestResult>>, DatesForExcelDTO>
+    public class GetDataForGeneratingReport : IGetCommand<Task<IList<TestResult>>, ReportExcelDTO>
     {
         readonly Context context;
 
@@ -19,29 +19,66 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<IList<TestResult>> Get(DatesForExcelDTO dates)
+        public async Task<IList<TestResult>> Get(ReportExcelDTO dto)
         {
-            var results = context.TestResults
-                    .Include(p => p.Answers)
-                    .Include(e => e.User)
-                    .Include(e => e.Test)
-                    .ThenInclude(p => p.Questions)
-                    .AsNoTracking();
+            IList<TestResult> results = new List<TestResult>();
 
-            if (dates.fdate == null && dates.ldate != null)
+            switch (dto.variant)
             {
-                results.Where(p => p.Date.Date <= dates.ldate.Value.Date);
-            }
-            else if (dates.fdate != null && dates.ldate == null)
-            {
-                results.Where(p => p.Date.Date >= dates.fdate.Value.Date);
-            }
-            else if (dates.fdate != null && dates.ldate != null)
-            {
-                results.Where(e => e.Date.Date >= dates.fdate.Value.Date && e.Date.Date <= dates.ldate.Value.Date);
+                case 1:
+                    results.Add(await context.TestResults.AsNoTracking()
+                        .Include(p => p.Answers).AsNoTracking()
+                        .Include(e => e.User).AsNoTracking()
+                        .Include(e => e.Test)
+                            .ThenInclude(p => p.Questions).AsNoTracking()
+                        .OrderBy(e => e.Id).LastOrDefaultAsync());
+                    break;
+                case 2:
+                    results = await context.TestResults.AsNoTracking().Include(p => p.Answers).AsNoTracking()
+                        .Include(e => e.User).AsNoTracking()
+                        .Include(e => e.Test)
+                            .ThenInclude(p => p.Questions).AsNoTracking()
+                        .OrderByDescending(e => e.Id).Take(3).ToListAsync();
+                    break;
+                case 3:
+                    results = await context.TestResults.AsNoTracking().Include(p => p.Answers).AsNoTracking()
+                        .Include(e => e.User).AsNoTracking()
+                        .Include(e => e.Test)
+                            .ThenInclude(p => p.Questions).AsNoTracking().ToListAsync();
+                    break;
+                case 4:
+                    if (dto.fdate == null && dto.ldate != null)
+                    {
+                        results = await context.TestResults.AsNoTracking().Include(p => p.Answers).AsNoTracking()
+                        .Include(e => e.User).AsNoTracking()
+                        .Include(e => e.Test)
+                            .ThenInclude(p => p.Questions).AsNoTracking().Where(p => p.Date.Date <= dto.ldate.Value.Date).ToListAsync();
+                    }
+                    else if (dto.fdate != null && dto.ldate == null)
+                    {
+                        results = await context.TestResults.AsNoTracking().Include(p => p.Answers).AsNoTracking()
+                        .Include(e => e.User).AsNoTracking()
+                        .Include(e => e.Test)
+                            .ThenInclude(p => p.Questions).AsNoTracking().Where(p => p.Date.Date >= dto.fdate.Value.Date).ToListAsync();
+                    }
+                    else if (dto.fdate != null && dto.ldate != null)
+                    {
+                        results = await context.TestResults.AsNoTracking().Include(p => p.Answers).AsNoTracking()
+                        .Include(e => e.User).AsNoTracking()
+                        .Include(e => e.Test)
+                            .ThenInclude(p => p.Questions).AsNoTracking().Where(e => e.Date.Date >= dto.fdate.Value.Date && e.Date.Date <= dto.ldate.Value.Date).ToListAsync();
+                    }
+                    else
+                    {
+                        results = await context.TestResults.AsNoTracking().Include(p => p.Answers).AsNoTracking()
+                        .Include(e => e.User).AsNoTracking()
+                        .Include(e => e.Test)
+                            .ThenInclude(p => p.Questions).AsNoTracking().ToListAsync();
+                    }
+                    break;
             }
 
-            return await results.ToListAsync();
+            return results;
         }
     }
 }

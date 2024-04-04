@@ -2,39 +2,40 @@
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using StatusGeneric;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ExcelServices
 {
     internal class WriteDataInExcel
     {
         private string[] NamesColumnsOfTest = {"Testing date", "Tester", "Comment", "Addit. Comment", "Apparat", "Version"};
-        internal IStatusGeneric<byte[]> Generate(IList<TestResult> testResults)
+        internal async Task<IStatusGeneric<byte[]>> Generate(IList<(TestResult, TestVersion)> testResults)
         {
             var status = new StatusGenericHandler<byte[]>();
-            var tests = testResults.Select(e => e.Test).GroupBy(e => e.Id).Select(e => e.First()).ToList();
-
-            if (tests.Count() == 0)
-                status.AddError("ни одного теста не найдено");
 
             var package = new ExcelPackage();
             if (!status.HasErrors)
             {
-                for (int i = 0; i < tests.Count(); i++)
-                {
-                    var sheet = package.Workbook.Worksheets.Add(tests[i].Name);
-                    var results = testResults.Where(e => e.Test.Id == tests[i].Id).ToList();
-                    sheet.Column(1).Width = 15;
-                    WriteNamesColumns(sheet, NamesColumnsOfTest, 0);
-                    for (int j = 0; j < results.Count(); j++)
-                    {
-                        WriteQuestions(sheet, results[j], 7, 1);
-                        WriteDataOfTest(sheet, results[j], j + 1);
-                        WriteResults(sheet, results[j], 2 + j);
-                    }
-                }
+                var sheet = package.Workbook.Worksheets.Add("Лист 1");
+                WriteVersions(sheet, testResults.Select(e => e.Item2.Id).ToList());
+
+                
+                //for (int i = 0; i < testResults.Count(); i++)
+                //{
+                //    var sheet = package.Workbook.Worksheets.Add(testResults[i].Item1.Test.Name);
+                //    sheet.Column(1).Width = 15;
+                //    WriteNamesColumns(sheet, NamesColumnsOfTest, 0);
+                //    for (int j = 0; j < .Count(); j++)
+                //    {
+                //        WriteQuestions(sheet, results[j], 7, 1);
+                //        WriteDataOfTest(sheet, results[j], j + 1);
+                //        WriteResults(sheet, results[j], 2 + j);
+                //    }
+                //}
                 status.SetResult(package.GetAsByteArray());
             }
             return status;
@@ -53,6 +54,14 @@ namespace ExcelServices
             {
                 sheet.Cells[i, coloffset].Style.Fill.PatternType = ExcelFillStyle.Solid;
                 sheet.Cells[i, coloffset].Style.Fill.BackgroundColor.SetColor(255, 248, 203, 173);
+            }
+        }
+
+        private void WriteVersions(ExcelWorksheet sheet, IList<uint> versions)
+        {
+            for (int i = 0; i < versions.Count(); i++)
+            {
+                sheet.Cells[1, i + 1].Value = versions[i];
             }
         }
 

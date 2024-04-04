@@ -16,9 +16,7 @@ using Domain.Model;
 using System.ComponentModel.DataAnnotations;
 using TgBot;
 using File = System.IO.File;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
 using Newtonsoft.Json;
-using Database.AddFunctions;
 using Database.Db;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,7 +32,7 @@ namespace TelegramBot
         static IGetCommand<Task<IEnumerable<TestResult>>, long> getStoppedTest;
         static IGetCommand<Task<IEnumerable<Device>>, PageDto> getDevicesPage;
         static IGetCommand<Task<IEnumerable<Test>>, PageDto> getTestPage;
-        static IExcelGenerator<Task<FileDto>, DatesForExcelDTO> excel;
+        static IExcelGenerator<Task<FileDto>, ReportExcelDTO> excel;
         static IWriteCommand<Task, UpdateResultDto> updateTestResult;
         static IGetCommand<Task<TestResult>, ushort> getLastresult;
         static IGetCommand<Task<TestResult>, int> getTestResult;
@@ -340,29 +338,27 @@ namespace TelegramBot
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 await client.SendTextMessageAsync(id, "начальная дата:", replyMarkup: skipfdate);
             }
-            #region
-            //else if (query.Data == "SkipFirstDate")
-            //{
-            //    await client.EditMessageReplyMarkupAsync(id, mesId);
-            //    State[id].ChatState = ChatState.LastDate;
-            //    await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
-            //}
-            //else if (query.Data == "SkipLastDate")
-            //{
-            //    await client.EditMessageReplyMarkupAsync(id, mesId);
-            //    var file = await excel.WriteResultsAsync(State[id].datesDto);
-            //    if (file.Errors == null)
-            //    {
-            //        using (Stream str = File.OpenRead(file.PathName))
-            //        {
-            //            await client.SendDocumentAsync(id, new(str, Path.GetFileName(file.PathName)));
-            //        }
-            //        State[id].ChatState = ChatState.None;
-            //        return;
-            //    }
-            //    await client.SendTextMessageAsync(id, string.Join('\n', file.Errors));
-            //}
-            #endregion
+            else if (query.Data == "SkipFirstDate")
+            {
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+                State[id].ChatState = ChatState.LastDate;
+                await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
+            }
+            else if (query.Data == "SkipLastDate")
+            {
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+                var file = await excel.WriteResultsAsync(State[id].datesDto);
+                if (file.Errors == null)
+                {
+                    using (Stream str = File.OpenRead(file.PathName))
+                    {
+                        await client.SendDocumentAsync(id, new(str, Path.GetFileName(file.PathName)));
+                    }
+                    State[id].ChatState = ChatState.None;
+                    return;
+                }
+                await client.SendTextMessageAsync(id, string.Join('\n', file.Errors));
+            }
             else if (query.Data == "BackToSelectingUser")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);

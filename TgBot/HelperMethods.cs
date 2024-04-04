@@ -50,7 +50,8 @@ namespace TelegramBot
 
             excel = new ExcelGenerator(
                 new GetDataForGeneratingReport(
-                    context));
+                    context),
+                new GetTestVersion(context));
 
             getTest = new GetTest(context);
 

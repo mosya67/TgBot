@@ -33,7 +33,7 @@ namespace TelegramBot
         public sbyte QuestNumb = 0;
         public ChatState ChatState;
         public ResultTestDto result;
-        public DatesForExcelDTO datesDto;
+        public ReportExcelDTO datesDto;
         public IList<Question> Questions;
         public ICollection<int> deleteButtons;
         public bool SkippedTestsFlag = false;

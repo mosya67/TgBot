@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace Domain.Dto
 {
-    public class DatesForExcelDTO
+    public class ReportExcelDTO
     {
         public DateTime? fdate;
         public DateTime? ldate;
+        public uint variant;
     }
 }
