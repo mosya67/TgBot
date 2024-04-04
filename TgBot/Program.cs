@@ -433,7 +433,6 @@ namespace TelegramBot
                 State[id].NumerPage = 0;
                 await CheckTest(client, id, testid, 0, mesId);
                 var lastResult = await getLastresult.Get(testid);
-#warning поправить (если было 2 или < то NA, а у меня проверка на null просто)
                 if (lastResult is null || await countResults.Get(testid) < 2)
                     await client.SendTextMessageAsync(id, $"Ver NA:");
                 else
