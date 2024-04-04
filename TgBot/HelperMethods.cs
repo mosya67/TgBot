@@ -17,11 +17,30 @@ using Domain;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.Numeric;
 using System.IO;
+using System.ComponentModel.DataAnnotations;
 
 namespace TelegramBot
 {
     internal partial class Program
     {
+        static IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveResultWithValidation;
+        static IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveResult;
+        static IGetCommand<Task<IEnumerable<Domain.Model.User>>, PageDto> getUsersPage;
+        static IGetCommand<Task<IEnumerable<TestResult>>, long> getStoppedTest;
+        static IGetCommand<Task<IEnumerable<Device>>, PageDto> getDevicesPage;
+        static IGetCommand<Task<IEnumerable<Test>>, PageDto> getTestPage;
+        static IExcelGenerator<Task<FileDto>, ReportExcelDTO> excel;
+        static IWriteCommand<Task, UpdateResultDto> updateTestResult;
+        static IGetCommand<Task<TestResult>, ushort> getLastresult;
+        static IGetCommand<Task<TestResult>, int> getTestResult;
+        static IGetCommand<Task<string>, ushort> getTestJson;
+        static IWriteCommand<Task, string> addNewDevice;
+        static IGetCommand<Task<Test>, ushort> getTest;
+        static IWriteCommand<Task, Stream> changeTest;
+        static IWriteCommand<Task, string> addNewUser;
+        static IWriteCommand<Task, Test> AddTest;
+        static IGetCommand<Task<int>, ushort> countResults;
+
         static IStatusGeneric<DateTime> ParseDate(string message)
         {
             DateTime date;
@@ -280,7 +299,6 @@ namespace TelegramBot
                 }
             }
 
-            AddButton<T>(ref buttons, "Добавить");
 
             var backAndNextButtons = new List<InlineKeyboardButton>();
 
@@ -288,6 +306,7 @@ namespace TelegramBot
 
             AddNextButton<T>(items, ref backAndNextButtons);
             buttons.Add(backAndNextButtons);
+            AddButton<T>(ref buttons, "Добавить");
 
             return new InlineKeyboardMarkup(buttons);
         }
@@ -305,7 +324,6 @@ namespace TelegramBot
                 }
             }
 
-            AddButton<T>(ref buttons, "начать тестирование");
 
             var backAndNextButtons = new List<InlineKeyboardButton>();
 
@@ -313,6 +331,7 @@ namespace TelegramBot
 
             AddNextButton<T>(items, ref backAndNextButtons);
             buttons.Add(backAndNextButtons);
+            AddButton<T>(ref buttons, "начать тестирование");
 
             return new InlineKeyboardMarkup(buttons);
         }
@@ -332,12 +351,12 @@ namespace TelegramBot
 
             var backAndNextButtons = new List<InlineKeyboardButton>();
 
-            AddButton<T>(ref buttons, "Добавить");
 
             AddLastButton<T>(numberPage, ref backAndNextButtons);
 
             AddNextButton<T>(items, ref backAndNextButtons);
             buttons.Add(backAndNextButtons);
+            AddButton<T>(ref buttons, "Добавить");
 
             return new InlineKeyboardMarkup(buttons);
         }
@@ -389,7 +408,7 @@ namespace TelegramBot
 
         static void AddNextButton<T>(IList<T> items, ref List<InlineKeyboardButton> arr)
         {
-            if (items.Count() >= BotSettings.countElementsInPage)
+            if (items.Count() > BotSettings.countElementsInPage)
             {
                 arr.Add(InlineKeyboardButton.WithCallbackData("Далее", "Next" + typeof(T).Name + "Page"));
             }

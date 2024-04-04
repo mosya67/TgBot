@@ -22,7 +22,7 @@ namespace Database.GetFunctions
 
         public async Task<IEnumerable<Device>> Get(PageDto dto)
         {
-            return await context.Devices.Skip(dto.startPage * dto.countElementsInPage).Take(dto.countElementsInPage).ToListAsync();
+            return await context.Devices.Skip(dto.startPage * dto.countElementsInPage).Take(dto.countElementsInPage + 1).ToListAsync();
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Database.Db.EntityTypeConfig;
 using Domain.Model;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 #nullable disable
 
@@ -25,7 +26,7 @@ namespace Database.Db
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlite("Data Source=C:\\Users\\admin\\source\\repos\\TgBot\\TgBot\\bin\\Debug\\net5.0\\db.db");
+                optionsBuilder.UseSqlite("Data Source=db.db");
             }
         }
 

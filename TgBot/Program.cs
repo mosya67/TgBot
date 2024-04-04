@@ -10,39 +10,17 @@ using System.Linq;
 using System.Net.Http;
 using System.Net;
 using System.IO;
-using Domain;
 using Domain.Dto;
 using Domain.Model;
-using System.ComponentModel.DataAnnotations;
 using TgBot;
 using File = System.IO.File;
 using Newtonsoft.Json;
-using Database.Db;
-using Microsoft.EntityFrameworkCore;
 
 namespace TelegramBot
 {
     internal partial class Program
     {
         static Dictionary<long, UserState> State;
-
-        static IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveResultWithValidation;
-        static IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveResult;
-        static IGetCommand<Task<IEnumerable<Domain.Model.User>>, PageDto> getUsersPage;
-        static IGetCommand<Task<IEnumerable<TestResult>>, long> getStoppedTest;
-        static IGetCommand<Task<IEnumerable<Device>>, PageDto> getDevicesPage;
-        static IGetCommand<Task<IEnumerable<Test>>, PageDto> getTestPage;
-        static IExcelGenerator<Task<FileDto>, ReportExcelDTO> excel;
-        static IWriteCommand<Task, UpdateResultDto> updateTestResult;
-        static IGetCommand<Task<TestResult>, ushort> getLastresult;
-        static IGetCommand<Task<TestResult>, int> getTestResult;
-        static IGetCommand<Task<string>, ushort> getTestJson;
-        static IWriteCommand<Task, string> addNewDevice;
-        static IGetCommand<Task<Test>, ushort> getTest;
-        static IWriteCommand<Task, Stream> changeTest;
-        static IWriteCommand<Task, string> addNewUser;
-        static IWriteCommand<Task, Test> AddTest;
-        static IGetCommand<Task<int>, ushort> countResults;
 
         static async Task Main(string[] args)
         {
