@@ -12,27 +12,52 @@ namespace ExcelServices
 {
     public class ExcelGenerator : IExcelGenerator<Task<FileDto>, ReportExcelDTO>
     {
-        readonly IGetCommand<Task<IList<TestResult>>, ReportExcelDTO> getData;
-        readonly IGetCommand<Task<TestVersion>, uint> getTestVersion;
+        readonly IGetCommand<Task<IList<TestVersion>>, ushort> getVersions;
+        readonly IGetCommand<Task<IList<TestResult>>, ReportExcelDTO> getResults;
+        readonly IGetCommand<Task<TestVersion>, uint> getVersion;
 
-        public ExcelGenerator(IGetCommand<Task<IList<TestResult>>, ReportExcelDTO> getData, IGetCommand<Task<TestVersion>, uint> getTestVersion)
+        public ExcelGenerator(IGetCommand<Task<IList<TestVersion>>, ushort> getVersions, IGetCommand<Task<IList<TestResult>>, ReportExcelDTO> getResults, IGetCommand<Task<TestVersion>, uint> getVersion)
         {
-            this.getData = getData ?? throw new ArgumentNullException(nameof(getData));
-            this.getTestVersion = getTestVersion ?? throw new ArgumentNullException(nameof(getTestVersion));
+            this.getVersions = getVersions ?? throw new ArgumentNullException(nameof(getVersions));
+            this.getResults = getResults ?? throw new ArgumentNullException(nameof(getResults));
+            this.getVersion = getVersion ?? throw new ArgumentNullException(nameof(getVersion));
         }
 
         public async Task<FileDto> WriteResultsAsync(ReportExcelDTO dto)
         {
             IStatusGeneric<byte[]> reportExcel = null;
-            List<(TestResult, TestVersion)> data = new();
             FileDto file = new FileDto();
-            var testResults = await getData.Get(dto);
-            testResults = testResults.OrderByDescending(x => x.Date).ToList();
-            for (int i = 0; i < testResults.Count(); i++)
+            IList<IList<TestResult>> results = new List<IList<TestResult>>();
+            IList<TestVersion> testVersions = new List<TestVersion>();
+
+            if (dto.variant == 1)
             {
-                data.Add((testResults[i], await getTestVersion.Get(testResults[i].TestVersionId)));
+                results.Add(await getResults.Get(dto));
+                testVersions.Add(await getVersion.Get(results[0][0].TestVersionId));
             }
-            reportExcel = await new WriteDataInExcel().Generate(data);
+            else
+            {
+                var res = await getResults.Get(dto);
+                List<uint> versId = new List<uint>();
+                for (int i = 0; i < res.Count(); i++)
+                {
+                    var ver = await getVersion.Get(res[i].TestVersionId);
+                    if (!versId.Contains(ver.Id))
+                    {
+                        testVersions.Add(ver);
+                        versId.Add(ver.Id);
+                    }
+                }
+
+                for (int i = 0; i < testVersions.Count(); i++)
+                {
+                    results.Add(res.Where(e => e.TestVersionId == testVersions[i].Id).ToList());
+                }
+            }
+
+            if (results.Count() == 0) return new FileDto { Errors = new List<string> { "результаты не найдены" } };
+
+            reportExcel = await new WriteDataInExcel().Generate(results, testVersions);
             if (reportExcel.HasErrors)
             {
                 file.Errors = reportExcel.Errors.Select(e => e.ErrorResult.ErrorMessage).ToList();

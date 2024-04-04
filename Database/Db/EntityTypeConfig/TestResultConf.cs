@@ -23,8 +23,6 @@ namespace Database.Db.EntityTypeConfig
             entity.Property(e => e.Comment).HasMaxLength(128);
 
             entity.Property(e => e.Version).HasColumnName("Release");
-
-            entity.HasOne<TestVersion>().WithOne().HasForeignKey<TestResult>(e => e.TestVersionId);
         }
     }
 }

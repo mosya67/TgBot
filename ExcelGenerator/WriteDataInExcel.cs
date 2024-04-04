@@ -13,29 +13,25 @@ namespace ExcelServices
     internal class WriteDataInExcel
     {
         private string[] NamesColumnsOfTest = {"Testing date", "Tester", "Comment", "Addit. Comment", "Apparat", "Version"};
-        internal async Task<IStatusGeneric<byte[]>> Generate(IList<(TestResult, TestVersion)> testResults)
+        internal async Task<IStatusGeneric<byte[]>> Generate(IList<IList<TestResult>> results, IList<TestVersion> versions)
         {
             var status = new StatusGenericHandler<byte[]>();
 
             var package = new ExcelPackage();
             if (!status.HasErrors)
             {
-                var sheet = package.Workbook.Worksheets.Add("Лист 1");
-                WriteVersions(sheet, testResults.Select(e => e.Item2.Id).ToList());
-
-                
-                //for (int i = 0; i < testResults.Count(); i++)
-                //{
-                //    var sheet = package.Workbook.Worksheets.Add(testResults[i].Item1.Test.Name);
-                //    sheet.Column(1).Width = 15;
-                //    WriteNamesColumns(sheet, NamesColumnsOfTest, 0);
-                //    for (int j = 0; j < .Count(); j++)
-                //    {
-                //        WriteQuestions(sheet, results[j], 7, 1);
-                //        WriteDataOfTest(sheet, results[j], j + 1);
-                //        WriteResults(sheet, results[j], 2 + j);
-                //    }
-                //}
+                for (int i = 0; i < versions.Count(); i++)
+                {
+                    var sheet = package.Workbook.Worksheets.Add($"{versions[i].DateCreated.ToShortDateString()} {versions[i].DateCreated.ToLongTimeString()}");
+                    sheet.Column(1).Width = 15;
+                    WriteNamesColumns(sheet, NamesColumnsOfTest, 0);
+                    for (int j = 0; j < results[i].Count(); j++)
+                    {
+                        WriteQuestions(sheet, results[i][j], 7, 1, versions.Single(e => e.Id == results[i][j].TestVersionId));
+                        WriteDataOfTest(sheet, results[i][j], j + 1);
+                        WriteResults(sheet, results[i][j], 2 + j);
+                    }
+                }
                 status.SetResult(package.GetAsByteArray());
             }
             return status;
@@ -44,7 +40,7 @@ namespace ExcelServices
         private void WriteDataOfTest(ExcelWorksheet sheet, TestResult res, int coloffset)
         {
             coloffset++;
-            sheet.Cells[1, coloffset].Value = res.Date.ToShortDateString();
+            sheet.Cells[1, coloffset].Value = res.Date.ToShortDateString() + ' ' + res.Date.ToShortTimeString();
             sheet.Cells[2, coloffset].Value = res.User.Fio;
             sheet.Cells[3, coloffset].Value = res.Comment;
             sheet.Cells[4, coloffset].Value = res.AdditionalComment;
@@ -54,14 +50,6 @@ namespace ExcelServices
             {
                 sheet.Cells[i, coloffset].Style.Fill.PatternType = ExcelFillStyle.Solid;
                 sheet.Cells[i, coloffset].Style.Fill.BackgroundColor.SetColor(255, 248, 203, 173);
-            }
-        }
-
-        private void WriteVersions(ExcelWorksheet sheet, IList<uint> versions)
-        {
-            for (int i = 0; i < versions.Count(); i++)
-            {
-                sheet.Cells[1, i + 1].Value = versions[i];
             }
         }
 
@@ -82,18 +70,18 @@ namespace ExcelServices
             }
         }
 
-        private void WriteQuestions(ExcelWorksheet sheet, TestResult res, int row, int col)
+        private void WriteQuestions(ExcelWorksheet sheet, TestResult res, int row, int col, TestVersion vers)
         {
-            for (int i = 0; i < res.Answers.Count(); i++)
+            for (int i = 0; i < vers.Questions.Count(); i++)
             {
-                sheet.Cells[row + i, col].Value = res.Test.Questions.ToArray()[i].question;
+                sheet.Cells[row + i, col].Value = vers.Questions[i].question;
                 sheet.Cells[row + i, col].Style.Fill.PatternType = ExcelFillStyle.Solid;
                 if (i % 2 != 0)
                     sheet.Cells[row + i, col].Style.Fill.BackgroundColor.SetColor(255, 159, 183, 225);
                 else
                     sheet.Cells[row + i, col].Style.Fill.BackgroundColor.SetColor(255, 121, 154, 213);
 
-                WriteComment(sheet, res.Test.Questions.Select(e => e.Comment).ToArray()[i], res.User.Fio, row + i, col);
+                WriteComment(sheet, vers.Questions.Select(e => e.Comment).ToList()[i], res.User.Fio, row + i, col);
             }
         }
 
@@ -105,10 +93,10 @@ namespace ExcelServices
             sheet.Cells[row, col].Comment.Visible = false;
         }
 
-        private void WriteNamesColumns(ExcelWorksheet sheet, string[] names, int rowoffset)
+        private void WriteNamesColumns(ExcelWorksheet sheet, IList<string> names, int rowoffset)
         {
             rowoffset++;
-            for (int i = 0; i < names.Length; i++)
+            for (int i = 0; i < names.Count(); i++)
             {
                 sheet.Cells[rowoffset + i, 1].Value = names[i];
                 sheet.Cells[rowoffset + i, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;

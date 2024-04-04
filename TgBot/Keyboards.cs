@@ -53,15 +53,19 @@ namespace TelegramBot
                 InlineKeyboardButton.WithCallbackData("далее", "NextCom"),
             }
         });
-
-        //public static InlineKeyboardMarkup gotoskippedtest = new(new[]
-        //{
-        //    new[]
-        //    {
-        //        InlineKeyboardButton.WithCallbackData("да", "gotoYes"),
-        //    },
-        //});
-
+        public static InlineKeyboardMarkup selectVariantReport = new(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("1", "1"),
+                InlineKeyboardButton.WithCallbackData("2", "2"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("3", "3"),
+                InlineKeyboardButton.WithCallbackData("4", "4"),
+            }
+        });
         public static InlineKeyboardMarkup skiprelease = new(new[]
         {
             new[]

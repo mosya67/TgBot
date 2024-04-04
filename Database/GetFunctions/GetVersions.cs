@@ -10,18 +10,19 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetTestVersion : IGetCommand<Task<TestVersion>, uint>
+    public class GetVersions : IGetCommand<Task<IList<TestVersion>>, ushort>
     {
         readonly Context context;
 
-        public GetTestVersion(Context context)
+        public GetVersions(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<TestVersion> Get(uint vers)
+        public async Task<IList<TestVersion>> Get(ushort testId)
         {
-            return await context.TestVersions.AsNoTracking().Include(e => e.Questions).AsNoTracking().SingleOrDefaultAsync(e => e.Id == vers);
+            return await context.TestVersions.AsNoTracking().Include(e => e.Questions).AsNoTracking()
+                .Where(e => e.TestId == testId).OrderBy(e => e.Id).ToListAsync();
         }
     }
 }

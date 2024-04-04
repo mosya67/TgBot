@@ -36,6 +36,7 @@ namespace TelegramBot
 
                 status.SetResult(date);
             }
+            else status.AddError("некорректная дата");
             return status;
         }
 
@@ -48,10 +49,9 @@ namespace TelegramBot
         {
             Context context = new Context();
 
-            excel = new ExcelGenerator(
-                new GetDataForGeneratingReport(
-                    context),
-                new GetTestVersion(context));
+            excel = new ExcelGenerator(new GetVersions(context),
+                new GetDataForGeneratingReport(context),
+                new GetVersion(context));
 
             getTest = new GetTest(context);
 
@@ -93,9 +93,11 @@ namespace TelegramBot
             getTestPage = new GetTestPage(context);
 
             getLastresult = new GetLastResult(context);
+
+            countResults = new GetCountTestResultsInTest(context);
         }
 
-        static async void SaveTestResult(ITelegramBotClient client, long id)
+        static async Task SaveTestResult(ITelegramBotClient client, long id)
         {
             await client.SendTextMessageAsync(id, "тест завершен");
             if (State[id].PassingStoppedTest)
@@ -178,16 +180,26 @@ namespace TelegramBot
             State[id].ChatState = ChatState.SelectingTest;
         }
 
+        static async void ViewTestsToReports(ITelegramBotClient client, long id, int mesId, IEnumerable<Test> tests, bool isEdit = true)
+        {
+            if (isEdit) await client.EditMessageReplyMarkupAsync(id, mesId);
+            var testNamesAndDate = string.Join("\n", tests.Select(p => $"{p.Id} {p.Name}   {p.Date.ToShortDateString()}"));
+            var buttons = GetButtonsFromPageToReports(0, tests.ToList(), e => e.Id.ToString(), e => e.Id.ToString());
+            if (tests.Count() == 0)
+            {
+                await client.SendTextMessageAsync(id, "Тестов нет", replyMarkup: buttons);
+                return;
+            }
+            await client.SendTextMessageAsync(id, testNamesAndDate);
+            await client.SendTextMessageAsync(id, "выберете тест", replyMarkup: buttons);
+            State[id].ChatState = ChatState.SelectingTestToReports;
+        }
+
         static async Task CheckTest(ITelegramBotClient client, long id, ushort testid, sbyte questNumb, int mesId)
         {
             await client.EditMessageReplyMarkupAsync(id, mesId);
             var test = await getTest.Get(testid);
             State[id].result.TestVersionId = test.TestVersionId;
-            if (test == null)
-            {
-                await client.SendTextMessageAsync(id, "вы выбрали не существующий тест");
-                return;
-            }
 
             if (test.Questions.Count() == 0 || test.Questions == null)
             {
@@ -321,6 +333,30 @@ namespace TelegramBot
             var backAndNextButtons = new List<InlineKeyboardButton>();
 
             AddButton<T>(ref buttons, "Добавить");
+
+            AddLastButton<T>(numberPage, ref backAndNextButtons);
+
+            AddNextButton<T>(items, ref backAndNextButtons);
+            buttons.Add(backAndNextButtons);
+
+            return new InlineKeyboardMarkup(buttons);
+        }
+
+        static InlineKeyboardMarkup GetButtonsFromPageToReports<T>(sbyte numberPage, IList<T> items, Func<T, string> ButtonName, Func<T, string> ButtonIdentificator)
+        {
+            var buttons = new List<List<InlineKeyboardButton>>();
+            sbyte iterator = 0;
+            for (int i = 0; i < BotSettings.heightButtonsOnMessage; i++)
+            {
+                buttons.Add(new List<InlineKeyboardButton>());
+                for (int j = 0; j < BotSettings.widthButtonsOnMessage; j++, iterator++)
+                {
+                    if (iterator < items.Count())
+                        buttons[i].Add(InlineKeyboardButton.WithCallbackData(ButtonName(items[iterator]), ButtonIdentificator(items[iterator])));
+                }
+            }
+
+            var backAndNextButtons = new List<InlineKeyboardButton>();
 
             AddLastButton<T>(numberPage, ref backAndNextButtons);
 

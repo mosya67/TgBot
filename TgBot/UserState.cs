@@ -26,6 +26,8 @@ namespace TelegramBot
         SelectingStoppedTest,
         ChangeTest,
         AddTest,
+        SelectingTestToReports,
+        GetReport,
     }
 
     public class UserState

@@ -42,6 +42,7 @@ namespace TelegramBot
         static IWriteCommand<Task, Stream> changeTest;
         static IWriteCommand<Task, string> addNewUser;
         static IWriteCommand<Task, Test> AddTest;
+        static IGetCommand<Task<int>, ushort> countResults;
 
         static async Task Main(string[] args)
         {
@@ -100,23 +101,6 @@ namespace TelegramBot
                 await client.SendTextMessageAsync(id, "вы можете выбрать тест или получить отчеты", replyMarkup: start);
                 return;
             }
-#if DEBUG
-            else if (message?.Text?.ToLower() == "/s")
-            {
-                var c = new Context();
-                var vers = c.TestVersions.Include(e => e.Questions).ToList();
-
-                foreach (var i in vers)
-                {
-                    var test = await getTest.Get(i.TestId);
-                    Console.WriteLine($"{test.Name} {i.DateCreated}");
-                    foreach (var q in i.Questions)
-                    {
-                        Console.WriteLine($"    {q.question}");
-                    }
-                }
-            }
-#endif
             else if (State[id].ChatState == ChatState.SetFio)
             {
                 State[id].result.UserName = message.Text;
@@ -334,9 +318,9 @@ namespace TelegramBot
             }
             else if (query.Data == "Reports")
             {
-                State[id].ChatState = ChatState.FirtsDate;
+                var tests = await getTestPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
+                ViewTestsToReports(client, id, mesId, tests, false);
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                await client.SendTextMessageAsync(id, "начальная дата:", replyMarkup: skipfdate);
             }
             else if (query.Data == "SkipFirstDate")
             {
@@ -450,7 +434,7 @@ namespace TelegramBot
                 await CheckTest(client, id, testid, 0, mesId);
                 var lastResult = await getLastresult.Get(testid);
 #warning поправить (если было 2 или < то NA, а у меня проверка на null просто)
-                if (lastResult is null)
+                if (lastResult is null || await countResults.Get(testid) < 2)
                     await client.SendTextMessageAsync(id, $"Ver NA:");
                 else
                 {
@@ -460,6 +444,16 @@ namespace TelegramBot
                 }
                 var msg = await client.SendTextMessageAsync(id, "вы можете изменить тест или начать тестирование", replyMarkup: changeQuestionsAndLogin);
                 State[id].deleteButtons = new List<int> { msg.MessageId };
+            }
+            else if (State[id].ChatState == ChatState.SelectingTestToReports && ushort.TryParse(query?.Data, out testid))
+            {
+                State[id].NumerPage = 0;
+                var test = await getTest.Get(testid);
+                State[id].datesDto.TestVersion = test.TestVersionId;
+                State[id].datesDto.TestId = testid;
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+                State[id].ChatState = ChatState.GetReport;
+                await client.SendTextMessageAsync(id, "1) Последнее тестирование данного комплекса\n2) Последние 3 тестирования данного комплекса\n3) Все тестирования данного комплекса\n4) Все тестирования данного комплекса за указанные даты", replyMarkup: selectVariantReport);
             }
             else if (State[id].ChatState == ChatState.SelectingStoppedTest && int.TryParse(query.Data, out State[id].ResultId))
             {
@@ -481,6 +475,29 @@ namespace TelegramBot
                 ++State[id].NumerPage;
                 var buttons = await getUsersPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
                 ChangePage(client, id, mesId, () => GetButtonsFromPage(State[id].NumerPage, buttons.ToList(), e => e.Fio, e => e.TgId.ToString()));
+            }
+            else if (State[id].ChatState == ChatState.GetReport && sbyte.TryParse(query.Data, out State[id].datesDto.variant))
+            {
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+
+                if (State[id].datesDto.variant == 4)
+                {
+                    State[id].ChatState = ChatState.FirtsDate;
+                    await client.SendTextMessageAsync(id, "начальная дата:", replyMarkup: skipfdate);
+                    return;
+                }
+
+                var file = await excel.WriteResultsAsync(State[id].datesDto);
+                if (file.Errors == null)
+                {
+                    using (Stream str = File.OpenRead(file.PathName))
+                    {
+                        await client.SendDocumentAsync(id, new(str, Path.GetFileName(file.PathName)));
+                    }
+                    State[id].ChatState = ChatState.None;
+                    return;
+                }
+                await client.SendTextMessageAsync(id, string.Join('\n', file.Errors));
             }
             else if (query.Data == "LastDevicePage")
             {
@@ -533,7 +550,14 @@ namespace TelegramBot
                 bool check3 = CheckSkippedQuestion(client, id, 0);// <---- проверка на то, что после прохождения скипов, у человек не нажимал снова скипы
                 if (check3) return;
 
-                SaveTestResult(client, id);
+                State[id].datesDto.variant = 1;
+                State[id].datesDto.TestId = State[id].result.Test.Id;
+                var temp = State[id].datesDto;
+
+                await SaveTestResult(client, id);
+
+                var file = await excel.WriteResultsAsync(temp);
+                await SendAndDeleteDocument(client, id, file.PathName);
             }
         }
     }
