@@ -26,7 +26,7 @@ namespace Database.GetFunctions
                         .Include(p => p.Answers).AsNoTracking()
                         .Include(e => e.User).AsNoTracking()
                         .Include(e => e.Test)
-                            .ThenInclude(p => p.Questions).AsNoTracking().Where(e => !e.IsPaused);
+                            .ThenInclude(p => p.Questions).AsNoTracking().Where(e => !e.IsPaused && e.Test.Id == dto.TestId);
 
             switch (dto.variant)
             {
