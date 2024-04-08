@@ -26,9 +26,9 @@ namespace Domain
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 Formatting = Formatting.Indented
             };
-
+            var now = DateTime.Now;
             string json = JsonConvert.SerializeObject(test, settings);
-            var path = "C:\\Users\\admin\\source\\repos\\TgBot\\TgBot\\bin\\Debug\\net5.0\\" + new Random().Next().ToString() + ".json";
+            var path = now.Hour + " " + now.Minute + " " + +now.Second + " " + now.Millisecond + " " + now.ToShortDateString() + ".json";
             await File.WriteAllTextAsync(path, json);
 
             return path;

@@ -57,23 +57,21 @@ namespace TelegramBot
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("1", "1"),
-                InlineKeyboardButton.WithCallbackData("2", "2"),
+                InlineKeyboardButton.WithCallbackData("Последнее тестирование данного комплекса", "1"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("3", "3"),
-                InlineKeyboardButton.WithCallbackData("4", "4"),
-            }
-        });
-        public static InlineKeyboardMarkup skiprelease = new(new[]
-        {
+                InlineKeyboardButton.WithCallbackData("Последние 3 тестирования данного комплекса", "2"),
+            },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("далее", "SkipRelease"),
-            }
+                InlineKeyboardButton.WithCallbackData("Все тестирования данного комплекса", "3")
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Все тестирования данного комплекса за указанные даты", "4"),
+            },
         });
-
         public static InlineKeyboardMarkup NextAdCom = new(new[]
         {
             new[]
@@ -115,6 +113,18 @@ namespace TelegramBot
             new[]
             {
                 InlineKeyboardButton.WithCallbackData("пропустить", "SkipFirstDate"),
+            }
+        });
+
+        public static InlineKeyboardMarkup roles = new(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("обычный пользователь", "RoleNone"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("админ", "RoleAdmin"),
             }
         });
 

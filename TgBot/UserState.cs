@@ -6,6 +6,27 @@ using Telegram.Bot.Types;
 
 namespace TelegramBot
 {
+
+    public class UserState
+    {
+        public sbyte QuestNumb = 0;
+        public ChatState ChatState;
+        public ResultTestDto result;
+        public ReportExcelDTO datesDto;
+        public IList<Question> Questions;
+        public ICollection<int> deleteButtons;
+        public bool SkippedTestsFlag = false;
+        public sbyte NumerPage = 0;
+        public bool PassingStoppedTest = false;
+        public int ResultId;
+        public UserRole Role = UserRole.None;
+
+        public UserState()
+        {
+            result = new();
+            datesDto = new();
+        }
+    }
     public enum ChatState
     {
         None,
@@ -30,23 +51,9 @@ namespace TelegramBot
         GetReport,
     }
 
-    public class UserState
+    public enum UserRole
     {
-        public sbyte QuestNumb = 0;
-        public ChatState ChatState;
-        public ResultTestDto result;
-        public ReportExcelDTO datesDto;
-        public IList<Question> Questions;
-        public ICollection<int> deleteButtons;
-        public bool SkippedTestsFlag = false;
-        public sbyte NumerPage = 0;
-        public bool PassingStoppedTest = false;
-        public int ResultId;
-
-        public UserState()
-        {
-            result = new();
-            datesDto = new();
-        }
+        None,
+        Admin,
     }
 }
