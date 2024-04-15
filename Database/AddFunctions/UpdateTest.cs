@@ -25,16 +25,29 @@ namespace Database.AddFunctions
         {
             var oldTest = await getTest.Get(newTest.Id);
 
-            //проверка на изменения
-#warning проверить все ли условия добавил
             if (oldTest.Id == newTest.Id && oldTest.Date == newTest.Date && oldTest.Comment == newTest.Comment && oldTest.Name == newTest.Name)
-                for (int i = 0; i < oldTest.Questions.Count(); i++)
+                if (oldTest.Questions.Count() > newTest.Questions.Count())
                 {
-                    if (oldTest.Questions[i].question != newTest.Questions[i].question && oldTest.Questions[i].Comment != newTest.Questions[i].Comment)
+                    throw new ArgumentException("нельзя удалять проверки из теста");
+                }
+                else if (oldTest.Questions.Count() == newTest.Questions.Count())
+                {
+                    throw new ArgumentException("Вы либо ничего не изменили, либо изменили содержимое проверок");
+                }
+                else
+                {
+                    for (int i = 0; i < oldTest.Questions.Count(); i++)
                     {
-                        throw new ArgumentException("Изменен уже существующий вопрос");
+                        if (oldTest.Questions[i].question != newTest.Questions[i].question && oldTest.Questions[i].Comment != newTest.Questions[i].Comment)
+                        {
+                            throw new ArgumentException("В тест можно только добавлять проверки, но не изменять их");
+                        }
                     }
                 }
+            else
+            {
+                throw new ArgumentException("Тест не должен изменяться");
+            }
 
             var lastQuest = await context.Questions.AsNoTracking().OrderBy(e => e.Id).LastOrDefaultAsync();
             var lastVers = await context.TestVersions.AsNoTracking().OrderBy(e => e.Id).LastOrDefaultAsync();

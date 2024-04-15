@@ -15,6 +15,9 @@ namespace Database.Db.EntityTypeConfig
 
             entity.Property(e => e.Comment)
                 .HasMaxLength(128);
+
+            entity.Property(e => e.ExpectedResult)
+                .IsRequired();
         }
     }
 }

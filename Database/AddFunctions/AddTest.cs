@@ -28,6 +28,7 @@ namespace Database.AddFunctions
             {
                 var a = await context.Tests.AsNoTracking().OrderBy(e => e.Id).LastAsync();
                 testId = a.Id + 1;
+#warning VersionId присваивается не совсем правильно (см вк)
             }
             await context.Tests.AddAsync(test);
             await context.SaveChangesAsync();

@@ -6,7 +6,6 @@ using Telegram.Bot.Types;
 
 namespace TelegramBot
 {
-
     public class UserState
     {
         public sbyte QuestNumb = 0;
@@ -14,7 +13,7 @@ namespace TelegramBot
         public ResultTestDto result;
         public ReportExcelDTO datesDto;
         public IList<Question> Questions;
-        public ICollection<int> deleteButtons;
+        public int[] deleteButtons;
         public bool SkippedTestsFlag = false;
         public sbyte NumerPage = 0;
         public bool PassingStoppedTest = false;

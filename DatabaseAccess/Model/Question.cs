@@ -9,6 +9,7 @@ namespace Domain.Model
         [JsonIgnore]
         public ushort Id { get; set; }
         public string question { get; set; }
+        public string ExpectedResult { get; set; }
         public string Comment { get; set; }
 
         [JsonIgnore]
