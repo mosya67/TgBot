@@ -40,6 +40,7 @@ namespace TelegramBot
         static IWriteCommand<Task, string> addNewUser;
         static IWriteCommand<Task, Test> AddTest;
         static IGetCommand<Task<int>, ushort> countResults;
+        static IGetCommand<Task<IList<Answer>>, LastResultDto> getLastAnswers;
 
         static IStatusGeneric<DateTime> ParseDate(string message)
         {
@@ -114,6 +115,8 @@ namespace TelegramBot
             getLastresult = new GetLastResult(context);
 
             countResults = new GetCountTestResultsInTest(context);
+
+            getLastAnswers = new GetLastAnswersOnQuestion(context);
         }
 
         static async Task SaveTestResult(ITelegramBotClient client, long id)
@@ -141,12 +144,23 @@ namespace TelegramBot
             State.Remove(id);
         }
 
-        static async Task NextQuestion(ITelegramBotClient client, long id, sbyte QuestNumb)
+        static async Task SendQuestion(ITelegramBotClient client, long id, sbyte QuestNumb)
         {
+            State[id].LastAnswers = await getLastAnswers.Get(
+                new LastResultDto { QuestNumb = QuestNumb, resultsCount = BotSettings.CountLastResultsInCheck, testId = State[id].result.Test.Id });
+
+            var lastResults_string = "";
+
+            for (int i = 0; i < State[id].LastAnswers.Count(); i++)
+            {
+                lastResults_string += i + 1 + ") Результат: " + State[id].LastAnswers[i].Result + (!string.IsNullOrEmpty(State[id].LastAnswers[i].Comment) ? '\n' + "Комментарий: " + State[id].LastAnswers[i].Comment : null) + '\n';
+            }
+
             await client.SendTextMessageAsync(id,
                         State[id].Questions[QuestNumb].question +
                         "\nОР: " + State[id].Questions[QuestNumb].ExpectedResult + 
-                        (State[id].Questions[QuestNumb].Comment != null ? $"\nКомментарий: {State[id].Questions[QuestNumb].Comment}" : ""),
+                        (State[id].Questions[QuestNumb].Comment != null ? $"\nКомментарий: {State[id].Questions[QuestNumb].Comment}" : "") +
+                        "\n\nПрошлые результаты:\n" + lastResults_string,
                         replyMarkup: answer);
         }
 
@@ -158,7 +172,7 @@ namespace TelegramBot
                 if (State[id].QuestNumb < State[id].Questions.Count())
                 {
                     State[id].ChatState = ChatState.AnswersTheQuestion; // <--- просто продолжение прохождение вопросов (не пропущенных)
-                    await NextQuestion(client, id, State[id].QuestNumb);
+                    await SendQuestion(client, id, State[id].QuestNumb);
                     return;
                 }
                 State[id].QuestNumb = 0;
@@ -201,7 +215,7 @@ namespace TelegramBot
             State[id].QuestNumb = question.Value;
             State[id].SkippedTestsFlag = true;
             State[id].ChatState = ChatState.AnswersTheQuestion;
-            await NextQuestion(client, id, State[id].QuestNumb);
+            await SendQuestion(client, id, State[id].QuestNumb);
         }
 
         static async Task SendAndDeleteDocument(ITelegramBotClient client, long id, string path)
@@ -268,22 +282,12 @@ namespace TelegramBot
 
             if (stoppedTests == null || stoppedTests.Count() == 0) return false;
             await client.EditMessageReplyMarkupAsync(id, mesId);
-            var buttons = GetButtonsFromPageToContinueTesting(State[id].Role, 0, stoppedTests.ToList(), e => e.Id.ToString(), e => e.Id.ToString());
+            var buttons = GetButtonsFromPageToContinueTesting(UserRole.Admin, 0, stoppedTests.ToList(), e => e.Id.ToString(), e => e.Id.ToString());
 
             var testNamesAndDate = string.Join("\n", stoppedTests.Select(p => $"{p.Id}   {p.Date.ToShortDateString()} {p.Date.ToShortTimeString()}"));
             await client.SendTextMessageAsync(id, "Остановленные тестирования:" + '\n' + testNamesAndDate, replyMarkup: buttons);
             State[id].ChatState = ChatState.SelectingStoppedTest;
             return true;
-        }
-
-        static async Task<string> GetResult(IEnumerable<Answer> items)
-        {
-            if (items == null) return null;
-
-            var res = items.FirstOrDefault(e => e.Result != "PASS");
-
-            if (res == null) return "Pass";
-            return "Failed";
         }
 
         static async Task<bool> CheckSkippedQuestion(ITelegramBotClient client, long id, sbyte questNumb)
@@ -337,6 +341,18 @@ namespace TelegramBot
             AddNextButton<T>(items, ref backAndNextButtons);
             buttons.Add(backAndNextButtons);
             AddButton<T>(role, ref buttons, "Добавить");
+
+            return new InlineKeyboardMarkup(buttons);
+        }
+        static InlineKeyboardMarkup GetButtonsFromAnwer(long id)
+        {
+            var buttons = new List<InlineKeyboardButton>();
+            for (sbyte i = 0; i < State[id].LastAnswers.Count(); i++)
+            {
+                buttons.Add(InlineKeyboardButton.WithCallbackData((i + 1).ToString(), i.ToString()));
+            }
+
+            buttons.Add(InlineKeyboardButton.WithCallbackData("Назад", "WriteLastResult_BackButton"));
 
             return new InlineKeyboardMarkup(buttons);
         }

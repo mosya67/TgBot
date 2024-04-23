@@ -18,6 +18,7 @@ namespace TelegramBot
         public sbyte NumerPage = 0;
         public bool PassingStoppedTest = false;
         public int ResultId;
+        public IList<Answer> LastAnswers;
         public UserRole Role = UserRole.None;
 
         public UserState()
@@ -48,6 +49,7 @@ namespace TelegramBot
         AddTest,
         SelectingTestToReports,
         GetReport,
+        WriteLastResult,
     }
 
     public enum UserRole

@@ -20,6 +20,10 @@ namespace TelegramBot
         {
             new[]
             {
+                InlineKeyboardButton.WithCallbackData("Записать один из прошлых результатов", "WriteLastResult"),
+            },
+            new[]
+            {
                 InlineKeyboardButton.WithCallbackData("PASS", "PASS"),
                 InlineKeyboardButton.WithCallbackData("BUG", "BUG"),
             },
@@ -42,7 +46,7 @@ namespace TelegramBot
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("далее", "NextQuestion"),
+                InlineKeyboardButton.WithCallbackData("далее", "SendQuestion"),
             }
         });
 

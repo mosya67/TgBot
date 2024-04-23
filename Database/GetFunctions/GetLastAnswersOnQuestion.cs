@@ -11,24 +11,28 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetLastResult : IGetCommand<Task<TestResult>, ushort>
+    public class GetLastAnswersOnQuestion : IGetCommand<Task<IList<Answer>>, LastResultDto>
     {
         readonly Context context;
 
-        public GetLastResult(Context context)
+        public GetLastAnswersOnQuestion(Context context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<TestResult> Get(ushort testId)
+        public async Task<IList<Answer>> Get(LastResultDto dto)
         {
             return await context.TestResults
                 .AsNoTracking()
-                .Include(e => e.Test)
                 .Include(e => e.Answers)
-                .Where(e => !e.IsPaused && e.Test.Id == testId)
+                .AsNoTracking()
+                .Include(e => e.Test)
+                .AsNoTracking()
+                .Where(e => !e.IsPaused && e.Test.Id == dto.testId)
                 .OrderByDescending(e => e.Date)
-                .FirstOrDefaultAsync();
+                .Take(dto.resultsCount)
+                .Select(e => e.Answers[dto.QuestNumb])
+                .ToListAsync();
         }
     }
 }

@@ -45,14 +45,12 @@ namespace TelegramBot
 
             var proxy = new WebProxy
             {
-#if !DEBUG
-                Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
-                BypassProxyOnLocal = false,
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(
-                    userName: log,
-                    password: pass)
-#endif
+                //Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
+                //BypassProxyOnLocal = false,
+                //UseDefaultCredentials = false,
+                //Credentials = new NetworkCredential(
+                //    userName: log,
+                //    password: pass)
             };
             var Httpclient = new HttpClient(handler: new HttpClientHandler { Proxy = proxy }, disposeHandler: true);
             var client = new TelegramBotClient(BotSettings.token, Httpclient);
@@ -194,7 +192,7 @@ namespace TelegramBot
             {
                 State[id].result.Version = message.Text;
                 State[id].ChatState = ChatState.AnswersTheQuestion;
-                await NextQuestion(client, id, State[id].QuestNumb);
+                await SendQuestion(client, id, State[id].QuestNumb);
             }
             else if (State[id].ChatState == ChatState.AddTest && message.Type == MessageType.Document)
             {
@@ -283,6 +281,15 @@ namespace TelegramBot
                     await client.EditMessageReplyMarkupAsync(id, mesId);
                     State[id].result.Answers[State[id].QuestNumb].Result = query.Data;
                     await EndTestingOrNextQuestion(client, id);
+                    return;
+                }
+                else if (query.Data == "WriteLastResult")
+                {
+                    InlineKeyboardMarkup buttons = GetButtonsFromAnwer(id);
+
+                    State[id].ChatState = ChatState.WriteLastResult;
+
+                    await client.EditMessageReplyMarkupAsync(id, mesId, replyMarkup: buttons);
                     return;
                 }
                 State[id].ChatState = ChatState.Commenting;
@@ -464,14 +471,12 @@ namespace TelegramBot
                 State[id].NumerPage = 0;
                 await CheckTest(client, id, testid, 0, mesId);
                 var lastResult = await getLastresult.Get(testid);
-                if (lastResult is null || await countResults.Get(testid) < 2)
-                    await client.SendTextMessageAsync(id, $"Ver NA:");
-                else
-                {
-                    string res = null;
-                    res = await GetResult(lastResult.Answers);
-                    await client.SendTextMessageAsync(id, $"Ver {lastResult.Version}: {res}");
-                }
+
+                int answerCount = lastResult.Answers.Count();
+                int passCount = lastResult.Answers.Where(e => e.Result == "PASS").Count();
+
+                await client.SendTextMessageAsync(id, $"Ver {lastResult.Version} {lastResult.Apparat}: {passCount}/{answerCount}");
+
                 Message msg = null;
                 if (State[id].Role == UserRole.Admin)
                     msg = await client.SendTextMessageAsync(id, "вы можете изменить тест или начать тестирование", replyMarkup: changeQuestionsAndLogin);
@@ -506,7 +511,7 @@ namespace TelegramBot
                 await CheckTest(client, id, testResult.Test.Id, testResult.PausedQuestionNumber.Value, mesId);
                 State[id].result.Answers = testResult.Answers;
                 State[id].ChatState = ChatState.AnswersTheQuestion;
-                await NextQuestion(client, id, State[id].QuestNumb);
+                await SendQuestion(client, id, State[id].QuestNumb);
             }
             else if (query.Data == "AddNewTestResult")
             {
@@ -569,9 +574,25 @@ namespace TelegramBot
                 Message msg = await client.SendTextMessageAsync(id, "Введите версию");
                 State[id].deleteButtons = new[] { msg.MessageId };
             }
-            else if (query.Data == "NextQuestion")
+            else if (query.Data == "SendQuestion")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
+                await EndTestingOrNextQuestion(client, id);
+            }
+            else if (query.Data == "WriteLastResult_BackButton")
+            {
+                State[id].ChatState = ChatState.AnswersTheQuestion;
+                await client.EditMessageReplyMarkupAsync(id, mesId, replyMarkup: answer);
+            }
+            else if (State[id].ChatState == ChatState.WriteLastResult && sbyte.TryParse(query.Data, out sbyte lastResultNumber))
+            {
+                State[id].result.Answers[State[id].QuestNumb].Result = State[id].LastAnswers[lastResultNumber].Result;
+                State[id].result.Answers[State[id].QuestNumb].Comment = State[id].LastAnswers[lastResultNumber].Comment;
+
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+
+                State[id].ChatState = ChatState.AnswersTheQuestion;
+
                 await EndTestingOrNextQuestion(client, id);
             }
         }
