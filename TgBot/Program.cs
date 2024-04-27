@@ -107,7 +107,7 @@ namespace TelegramBot
                 await addNewUser.Write(message.Text);
                 var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
                 var buttons = GetButtonsFromPage(State[id].Role, State[id].NumerPage, users.ToList(), e => e.Fio, e => e.TgId.ToString());
-                Message msg = await client.SendTextMessageAsync(id, "Выберите пользователя:", replyMarkup: buttons);
+                Message msg = await client.SendTextMessageAsync(id, "Выберите тестировщика", replyMarkup: buttons);
                 State[id].deleteButtons = new int[] { msg.MessageId };
                 State[id].ChatState = ChatState.SelectionUser;
             }
@@ -117,7 +117,7 @@ namespace TelegramBot
                 await addNewDevice.Write(message.Text);
                 var devicesPage = await getDevicesPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
                 var buttons = GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name);
-                Message msg = await client.SendTextMessageAsync(id, "Выберите аппарат:", replyMarkup: buttons);
+                Message msg = await client.SendTextMessageAsync(id, "Выберите окружение", replyMarkup: buttons);
                 State[id].deleteButtons = new int[] { msg.MessageId };
                 State[id].ChatState = ChatState.SelectionDevice;
             }
@@ -185,7 +185,7 @@ namespace TelegramBot
                 State[id].ChatState = ChatState.SelectionDevice;
                 var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
                 var btns = GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name);
-                Message msg = await client.SendTextMessageAsync(id, "Выберите аппарат:", replyMarkup: btns);
+                Message msg = await client.SendTextMessageAsync(id, "Выберите окружение", replyMarkup: btns);
                 State[id].deleteButtons = new[] { msg.MessageId };
             }
             else if (State[id].ChatState == ChatState.Release)
@@ -310,7 +310,7 @@ namespace TelegramBot
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
                 var btns = GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name);
-                await client.SendTextMessageAsync(id, "Выберите аппарат:", replyMarkup: btns);
+                await client.SendTextMessageAsync(id, "Выберите окружение:", replyMarkup: btns);
             }
             else if (query.Data == "AddNewUser")
             {
@@ -374,7 +374,7 @@ namespace TelegramBot
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
                 var buttons = GetButtonsFromPage(State[id].Role, State[id].NumerPage, users.ToList(), e => e.Fio, e => e.TgId.ToString());
-                await client.SendTextMessageAsync(id, "Выберите пользователя:", replyMarkup: buttons);
+                await client.SendTextMessageAsync(id, "Выберите тестировщика", replyMarkup: buttons);
                 State[id].ChatState = ChatState.SelectionUser;
             }
             else if (query.Data == "ChangeQuestions")
@@ -396,7 +396,7 @@ namespace TelegramBot
 
                 var buttons = GetButtonsFromPage(State[id].Role, State[id].NumerPage, users.ToList(), e => e.Fio, e => e.TgId.ToString());
 
-                await client.SendTextMessageAsync(id, "Выберите пользователя:", replyMarkup: buttons);
+                await client.SendTextMessageAsync(id, "Выберите тестировщика", replyMarkup: buttons);
                 State[id].ChatState = ChatState.SelectionUser;
             }
             else if (query.Data == "BackToSelectingDevice")
@@ -404,7 +404,7 @@ namespace TelegramBot
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 var devicesPage = await getDevicesPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
                 var buttons = GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name);
-                await client.SendTextMessageAsync(id, "Выберите аппарат:", replyMarkup: buttons);
+                await client.SendTextMessageAsync(id, "Выберите окружение", replyMarkup: buttons);
                 State[id].ChatState = ChatState.SelectionDevice;
             }
             else if (query.Data == "LastUserPage")
@@ -490,7 +490,7 @@ namespace TelegramBot
 
                     var buttons = GetButtonsFromPage(State[id].Role, State[id].NumerPage, users.ToList(), e => e.Fio, e => e.TgId.ToString());
 
-                    await client.SendTextMessageAsync(id, "Выберите пользователя:", replyMarkup: buttons);
+                    await client.SendTextMessageAsync(id, "Выберите тестировщика", replyMarkup: buttons);
                     State[id].ChatState = ChatState.SelectionUser;
                 }
             }
@@ -571,7 +571,7 @@ namespace TelegramBot
                 State[id].result.Device = query.Data;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 State[id].ChatState = ChatState.Release;
-                Message msg = await client.SendTextMessageAsync(id, "Введите версию");
+                Message msg = await client.SendTextMessageAsync(id, "Введите сборку");
                 State[id].deleteButtons = new[] { msg.MessageId };
             }
             else if (query.Data == "SendQuestion")

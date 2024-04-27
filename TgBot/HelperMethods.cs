@@ -157,6 +157,7 @@ namespace TelegramBot
             }
 
             await client.SendTextMessageAsync(id,
+                        QuestNumb + 1 + ") " +
                         State[id].Questions[QuestNumb].question +
                         "\nОР: " + State[id].Questions[QuestNumb].ExpectedResult + 
                         (State[id].Questions[QuestNumb].Comment != null ? $"\nКомментарий: {State[id].Questions[QuestNumb].Comment}" : "") +
