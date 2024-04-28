@@ -12,7 +12,7 @@ namespace TgBot
         /// widthButtonsOnMessage и heightButtonsOnMessage используются для определения шир. и выс. кнопок выбора, например выбор пользователя, после чего ниже них могут быть другие кнопки
         /// </summary>
         public const sbyte widthButtonsOnMessage = 2;
-        public const sbyte heightButtonsOnMessage = 4;
+        public const sbyte heightButtonsOnMessage = 2;
 
         public const sbyte countElementsInPage = widthButtonsOnMessage * heightButtonsOnMessage;
 

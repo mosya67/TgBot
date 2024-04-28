@@ -25,8 +25,8 @@ namespace TelegramBot
     {
         static IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveResultWithValidation;
         static IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveResult;
-        static IGetCommand<Task<IEnumerable<Domain.Model.User>>, PageDto> getUsersPage;
-        static IGetCommand<Task<IEnumerable<TestResult>>, long> getStoppedTest;
+        static IGetCommand<Task<IEnumerable<User>>, PageDto> getUsersPage;
+        static IGetCommand<Task<IEnumerable<TestResult>>, GetStoppedTestsDto> getStoppedTest;
         static IGetCommand<Task<IEnumerable<Device>>, PageDto> getDevicesPage;
         static IGetCommand<Task<IEnumerable<Test>>, PageDto> getTestPage;
         static IExcelGenerator<Task<FileDto>, ReportExcelDTO> excel;
@@ -233,9 +233,8 @@ namespace TelegramBot
             });
         }
 
-        static async Task ViewTests(ITelegramBotClient client, long id, int mesId, IEnumerable<Test> tests, bool isEdit = true)
+        static async Task ViewTests(ITelegramBotClient client, long id, IEnumerable<Test> tests)
         {
-            if (isEdit) await client.EditMessageReplyMarkupAsync(id, mesId);
             var buttons = GetButtonsFromPageToSelectTest(State[id].Role, 0, tests.ToList(), e => $"{e.Name}", e => e.Id.ToString());
             if (tests.Count() == 0)
             {
@@ -246,9 +245,8 @@ namespace TelegramBot
             State[id].ChatState = ChatState.SelectingTest;
         }
 
-        static async Task ViewTestsToReports(ITelegramBotClient client, long id, int mesId, IEnumerable<Test> tests, bool isEdit = true)
+        static async Task ViewTestsToReports(ITelegramBotClient client, long id, IEnumerable<Test> tests)
         {
-            if (isEdit) await client.EditMessageReplyMarkupAsync(id, mesId);
             var buttons = GetButtonsFromPageToReports(0, tests.ToList(), e => $"{e.Name}", e => e.Id.ToString());
             if (tests.Count() == 0)
             {
@@ -279,14 +277,12 @@ namespace TelegramBot
 
         static async Task<bool> HasStoppedTests(ITelegramBotClient client, long id, int mesId)
         {
-            var stoppedTests = await getStoppedTest.Get(State[id].result.UserId);
+            var stoppedTests = await getStoppedTest.Get(new GetStoppedTestsDto { userId = State[id].result.UserId, testId = State[id].result.Test.Id });
 
             if (stoppedTests == null || stoppedTests.Count() == 0) return false;
             await client.EditMessageReplyMarkupAsync(id, mesId);
-            var buttons = GetButtonsFromPageToContinueTesting(UserRole.Admin, 0, stoppedTests.ToList(), e => e.Id.ToString(), e => e.Id.ToString());
-
-            var testNamesAndDate = string.Join("\n", stoppedTests.Select(p => $"{p.Id}   {p.Date.ToShortDateString()} {p.Date.ToShortTimeString()}"));
-            await client.SendTextMessageAsync(id, "Остановленные тестирования:" + '\n' + testNamesAndDate, replyMarkup: buttons);
+            var buttons = GetButtonsFromPageToContinueTesting(UserRole.Admin, 0, stoppedTests.ToList(), e => e.Date.ToShortDateString() + ' ' + e.Date.ToShortTimeString(), e => e.Id.ToString());
+            await client.SendTextMessageAsync(id, "Остановленные тестирования (названия кнопок - дата остановки):", replyMarkup: buttons);
             State[id].ChatState = ChatState.SelectingStoppedTest;
             return true;
         }

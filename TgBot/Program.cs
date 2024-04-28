@@ -16,6 +16,8 @@ using TgBot;
 using File = System.IO.File;
 using Newtonsoft.Json;
 using Telegram.Bot.Types.ReplyMarkups;
+using System.Data;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
 
 namespace TelegramBot
 {
@@ -95,12 +97,6 @@ namespace TelegramBot
                 await client.SendTextMessageAsync(id, "вы можете выбрать тест или получить отчеты", replyMarkup: start);
                 return;
             }
-            else if (State[id].ChatState == ChatState.SetFio)
-            {
-                State[id].result.UserName = message.Text;
-                await client.SendTextMessageAsync(id, "введите комментарий к тесту[необязательно]", replyMarkup: NextCom);
-                State[id].ChatState = ChatState.CommentForTest;
-            }
             else if (State[id].ChatState == ChatState.AddNewUser)
             {
                 await DeleteButtons(client, id);
@@ -124,6 +120,7 @@ namespace TelegramBot
             else if (State[id].ChatState == ChatState.Commenting)
             {
                 await DeleteButtons(client, id);
+                await client.SendTextMessageAsync(id, "Комментарий к проверке: " + message.Text);
                 if (!State[id].SkippedTestsFlag)
                 {
                     State[id].result.Answers[State[id].QuestNumb].Comment = message.Text;
@@ -146,6 +143,8 @@ namespace TelegramBot
                     await client.SendTextMessageAsync(id, $"Что-то пошло не так. Попробуйте снова\n{string.Join('\n', date.Errors.Select(p => p.ErrorResult.ErrorMessage))}");
                     return;
                 }
+                await client.SendTextMessageAsync(id, "Введенная начальная дата: " + message.Text);
+
                 State[id].datesDto.fdate = date.Result;
                 State[id].ChatState = ChatState.LastDate;
                 await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
@@ -159,7 +158,7 @@ namespace TelegramBot
                     return;
                 }
                 State[id].datesDto.ldate = date.Result;
-
+                await client.SendTextMessageAsync(id, "Введенная конечная дата: " + message.Text);
                 var file = await excel.WriteResultsAsync(State[id].datesDto);
                 if (file.Errors == null)
                 {
@@ -174,12 +173,14 @@ namespace TelegramBot
                 await DeleteButtons(client, id);
                 State[id].result.CommentFromTest = message.Text;
                 State[id].ChatState = ChatState.AdditionalCommentForTest;
+                await client.SendTextMessageAsync(id, "Комментарий к тесту: " + message.Text);
                 Message msg = await client.SendTextMessageAsync(id, "введите дополнительный комментарий к тесту[необязательно]", replyMarkup: NextAdCom);
                 State[id].deleteButtons = new[] { msg.MessageId };
             }
             else if (State[id].ChatState == ChatState.AdditionalCommentForTest)
             {
                 await DeleteButtons(client, id);
+                await client.SendTextMessageAsync(id, "Дополнительный комментарий к тесту: " + message.Text);
                 State[id].result.AdditionalCommentForTest = message.Text;
                 State[id].NumerPage = 0;
                 State[id].ChatState = ChatState.SelectionDevice;
@@ -190,6 +191,7 @@ namespace TelegramBot
             }
             else if (State[id].ChatState == ChatState.Release)
             {
+                await client.SendTextMessageAsync(id, "Введенная сборка: " + message.Text);
                 State[id].result.Version = message.Text;
                 State[id].ChatState = ChatState.AnswersTheQuestion;
                 await SendQuestion(client, id, State[id].QuestNumb);
@@ -216,7 +218,7 @@ namespace TelegramBot
                         await client.SendTextMessageAsync(id, $"готово");
                         State[id].result.Answers = new List<Answer>();
                         var tests = await getTestPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
-                        await ViewTests(client, id, message.MessageId, tests, false);
+                        await ViewTests(client, id, tests);
                     }
                     catch (Exception ex)
                     {
@@ -239,7 +241,7 @@ namespace TelegramBot
                         await client.SendTextMessageAsync(id, $"готово");
                         State[id].result.Answers = new List<Answer>();
                         var tests = await getTestPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
-                        await ViewTests(client, id, message.MessageId, tests, false);
+                        await ViewTests(client, id, tests);
                     }
                     catch (ArgumentException ex)
                     {
@@ -273,12 +275,14 @@ namespace TelegramBot
                     await StopTesting(id, State[id].QuestNumb);
                     await client.SendTextMessageAsync(id, "тест был остановлен");
                     var tests = await getTestPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
-                    await ViewTests(client, id, mesId, tests);
+                    await client.EditMessageReplyMarkupAsync(id, mesId);
+                    await ViewTests(client, id, tests);
                     return;
                 }
                 else if (query.Data == "LATER")
                 {
                     await client.EditMessageReplyMarkupAsync(id, mesId);
+                    await client.SendTextMessageAsync(id, "Вы вернетесь к этой проверке в конце теста");
                     State[id].result.Answers[State[id].QuestNumb].Result = query.Data;
                     await EndTestingOrNextQuestion(client, id);
                     return;
@@ -292,22 +296,27 @@ namespace TelegramBot
                     await client.EditMessageReplyMarkupAsync(id, mesId, replyMarkup: buttons);
                     return;
                 }
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+                await client.SendTextMessageAsync(id, "выбранный результат проверки: " + query.Data);
                 State[id].ChatState = ChatState.Commenting;
                 State[id].result.Answers[State[id].QuestNumb].Result = query.Data;
-                Message msg = await client.EditMessageTextAsync(id, mesId, "Введите комментарий[необязательно]", replyMarkup: next);
+                Message msg = await client.SendTextMessageAsync(id, "Введите комментарий[необязательно]", replyMarkup: next);
                 State[id].deleteButtons = new[] { msg.MessageId };
             }
             else if (query.Data == "NextCom")
             {
                 State[id].ChatState = ChatState.AdditionalCommentForTest;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                await client.SendTextMessageAsync(id, "введите дополнительный комментарий к тесту[необязательно]", replyMarkup: NextAdCom);
+                await client.SendTextMessageAsync(id, "Дополнительный комментарий к тесту: пусто");
+                Message msg = await client.SendTextMessageAsync(id, "введите дополнительный комментарий к тесту[необязательно]", replyMarkup: NextAdCom);
+                State[id].deleteButtons = new int[] {msg.MessageId};
             }
             else if (query.Data == "NextAdCom")
             {
                 State[id].NumerPage = 0;
                 State[id].ChatState = ChatState.SelectionDevice;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
+                await client.SendTextMessageAsync(id, "Дополнительный комментарий к тесту: пусто");
                 var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
                 var btns = GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name);
                 await client.SendTextMessageAsync(id, "Выберите окружение:", replyMarkup: btns);
@@ -328,11 +337,22 @@ namespace TelegramBot
             }
             else if (query.Data == "RoleNone" || query.Data == "RoleAdmin")
             {
-                if (query.Data == "RoleAdmin") State[id].Role = UserRole.Admin;
-                else State[id].Role = UserRole.None;
+                string role = "";
+                if (query.Data == "RoleAdmin")
+                {
+                    State[id].Role = UserRole.Admin;
+                    role = "Админ";
+                }
+                else
+                {
+                    State[id].Role = UserRole.None;
+                    role = "Обычный пользователь";
+                }
 
                 var tests = await getTestPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
-                await ViewTests(client, id, mesId, tests);
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+                await client.SendTextMessageAsync(id, "Ваша роль: " + role);
+                await ViewTests(client, id, tests);
             }
             else if (query.Data == "Tests")
             {
@@ -344,19 +364,21 @@ namespace TelegramBot
             else if (query.Data == "Reports")
             {
                 var tests = await getTestPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
-                await ViewTestsToReports(client, id, mesId, tests, false);
+                await ViewTestsToReports(client, id, tests);
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 State[id].ChatState = ChatState.SelectingTestToReports;
             }
             else if (query.Data == "SkipFirstDate")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
+                await client.SendTextMessageAsync(id, "Введенная начальная дата: пусто");
                 State[id].ChatState = ChatState.LastDate;
                 await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
             }
             else if (query.Data == "SkipLastDate")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
+                await client.SendTextMessageAsync(id, "Введенная начальная дата: пусто");
                 var file = await excel.WriteResultsAsync(State[id].datesDto);
                 if (file.Errors == null)
                 {
@@ -470,12 +492,13 @@ namespace TelegramBot
             {
                 State[id].NumerPage = 0;
                 await CheckTest(client, id, testid, 0, mesId);
+                await client.SendTextMessageAsync(id, "Выбранный тест: " + State[id].result.Test?.Name);
                 var lastResult = await getLastresult.Get(testid);
 
                 int answerCount = lastResult.Answers.Count();
                 int passCount = lastResult.Answers.Where(e => e.Result == "PASS").Count();
 
-                await client.SendTextMessageAsync(id, $"Ver {lastResult.Version} {lastResult.Apparat}: {passCount}/{answerCount}");
+                await client.SendTextMessageAsync(id, $"Результат прошлого прохождения.\nСборка: {lastResult.Version}\nОкружение: {lastResult.Apparat}\nРезультат: {passCount}/{answerCount}");
 
                 Message msg = null;
                 if (State[id].Role == UserRole.Admin)
@@ -498,17 +521,19 @@ namespace TelegramBot
             {
                 State[id].NumerPage = 0;
                 var test = await getTest.Get(testid);
+                await client.SendTextMessageAsync(id, "Выбранный тест: " + test.Name);
                 State[id].datesDto.TestVersion = test.TestVersionId;
                 State[id].datesDto.TestId = testid;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 State[id].ChatState = ChatState.GetReport;
-                await client.SendTextMessageAsync(id, "Выберите вариант", replyMarkup: selectVariantReport);
+                await client.SendTextMessageAsync(id, "Что вы хотите получить?", replyMarkup: selectVariantReport);
             }
             else if (State[id].ChatState == ChatState.SelectingStoppedTest && int.TryParse(query.Data, out State[id].ResultId))
             {
+                await client.EditMessageReplyMarkupAsync(id, mesId);
                 State[id].PassingStoppedTest = true;
                 var testResult = await getTestResult.Get(State[id].ResultId);
-                await CheckTest(client, id, testResult.Test.Id, testResult.PausedQuestionNumber.Value, mesId);
+                await client.SendTextMessageAsync(id, "Вы продолжили тестирование, остановленное " + testResult.Date.ToShortDateString() + " в " + testResult.Date.ToShortTimeString());
                 State[id].result.Answers = testResult.Answers;
                 State[id].ChatState = ChatState.AnswersTheQuestion;
                 await SendQuestion(client, id, State[id].QuestNumb);
@@ -516,8 +541,10 @@ namespace TelegramBot
             else if (query.Data == "AddNewTestResult")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
+                await client.SendTextMessageAsync(id, "Вы начали новое тестирование");
                 State[id].ChatState = ChatState.CommentForTest;
-                await client.SendTextMessageAsync(id, "введите комментарий к тесту[необязательно]", replyMarkup: NextCom);
+                Message msg = await client.SendTextMessageAsync(id, "введите комментарий к тесту[необязательно]", replyMarkup: NextCom);
+                State[id].deleteButtons = new int[] { msg.MessageId };
             }
             else if (query.Data == "NextUserPage")
             {
@@ -528,6 +555,19 @@ namespace TelegramBot
             else if (State[id].ChatState == ChatState.GetReport && sbyte.TryParse(query.Data, out State[id].datesDto.variant))
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
+
+                string variant = "";
+
+                foreach (var hei in query.Message.ReplyMarkup.InlineKeyboard)
+                {
+                    foreach (var width in hei)
+                    {
+                        if (query.Data == width.CallbackData)
+                            variant = width.Text;
+                    }
+                }
+
+                await client.SendTextMessageAsync(id, "Ваш выбор: " + variant);
 
                 if (State[id].datesDto.variant == 4)
                 {
@@ -559,6 +599,19 @@ namespace TelegramBot
             }
             else if (State[id].ChatState == ChatState.SelectionUser && long.TryParse(query.Data, out State[id].result.UserId))
             {
+                var buttons = query.Message.ReplyMarkup.InlineKeyboard;
+
+                foreach (var hei in buttons)
+                {
+                    foreach (var width in hei)
+                    {
+                        if (query.Data == width.CallbackData)
+                            State[id].result.UserName = width.Text;
+                    }
+                }
+
+                await client.SendTextMessageAsync(id, "Выбранный тестировщик: " + State[id].result.UserName);
+
                 if (await HasStoppedTests(client, id, mesId)) return;
 
                 await client.EditMessageReplyMarkupAsync(id, mesId);
@@ -570,6 +623,7 @@ namespace TelegramBot
             {
                 State[id].result.Device = query.Data;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
+                await client.SendTextMessageAsync(id, "Выбранное окружение: " + query.Data);
                 State[id].ChatState = ChatState.Release;
                 Message msg = await client.SendTextMessageAsync(id, "Введите сборку");
                 State[id].deleteButtons = new[] { msg.MessageId };
@@ -577,6 +631,7 @@ namespace TelegramBot
             else if (query.Data == "SendQuestion")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
+                await client.SendTextMessageAsync(id, "Комментарий к проверке: пусто");
                 await EndTestingOrNextQuestion(client, id);
             }
             else if (query.Data == "WriteLastResult_BackButton")
@@ -586,6 +641,8 @@ namespace TelegramBot
             }
             else if (State[id].ChatState == ChatState.WriteLastResult && sbyte.TryParse(query.Data, out sbyte lastResultNumber))
             {
+                await client.SendTextMessageAsync(id, "Вставлен результат одного из прошлых ответов.\nРезультат: " + State[id].LastAnswers[lastResultNumber].Result + "\nКомментарий: " + State[id].LastAnswers[lastResultNumber].Comment);
+
                 State[id].result.Answers[State[id].QuestNumb].Result = State[id].LastAnswers[lastResultNumber].Result;
                 State[id].result.Answers[State[id].QuestNumb].Comment = State[id].LastAnswers[lastResultNumber].Comment;
 
