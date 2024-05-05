@@ -39,7 +39,6 @@ namespace TelegramBot
         static IWriteCommand<Task, Stream> changeTest;
         static IWriteCommand<Task, string> addNewUser;
         static IWriteCommand<Task, Test> AddTest;
-        static IGetCommand<Task<int>, ushort> countResults;
         static IGetCommand<Task<IList<Answer>>, LastResultDto> getLastAnswers;
 
         static IStatusGeneric<DateTime> ParseDate(string message)
@@ -113,8 +112,6 @@ namespace TelegramBot
             getTestPage = new GetTestPage(context);
 
             getLastresult = new GetLastResult(context);
-
-            countResults = new GetCountTestResultsInTest(context);
 
             getLastAnswers = new GetLastAnswersOnQuestion(context);
         }
