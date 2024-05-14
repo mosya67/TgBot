@@ -18,6 +18,7 @@ namespace TelegramBot
         public sbyte NumerPage = 0;
         public bool PassingStoppedTest = false;
         public int ResultId;
+        public ushort ProjectId;
         public IList<Answer> LastAnswers;
         public UserRole Role = UserRole.None;
 
@@ -50,11 +51,14 @@ namespace TelegramBot
         SelectingTestToReports,
         GetReport,
         WriteLastResult,
+        SelectingProject,
+        AddProject,
     }
 
     public enum UserRole
     {
         None,
         Admin,
+        
     }
 }

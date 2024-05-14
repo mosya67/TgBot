@@ -51,14 +51,10 @@ namespace Database.AddFunctions
 
             var lastQuest = await context.Questions.AsNoTracking().OrderBy(e => e.Id).LastOrDefaultAsync();
             var lastVers = await context.TestVersions.AsNoTracking().OrderBy(e => e.Id).LastOrDefaultAsync();
+#warning возможно стоит начинать цикл с оличества вопросов в старом тесте
             for (ushort i = 0; i < newTest.Questions.Count(); i++)
             {
-                newTest.Questions[i] = new Question
-                {
-                    Comment = newTest.Questions[i].Comment,
-                    question = newTest.Questions[i].question,
-                    Id = (ushort)(lastQuest.Id + i + 1),
-                };
+                newTest.Questions[i].Id = (ushort)(lastQuest.Id + i + 1);
             }
 
             await context.TestVersions.AddAsync(new TestVersion
@@ -70,9 +66,6 @@ namespace Database.AddFunctions
             });
             await context.SaveChangesAsync();
             oldTest.TestVersionId = (ushort)(lastVers.Id + 1);
-            oldTest.Comment = newTest.Comment;
-            oldTest.Name = newTest.Name;
-            oldTest.Date = newTest.Date;
 
             oldTest.Questions = newTest.Questions;
             await context.SaveChangesAsync();

@@ -50,7 +50,7 @@ namespace Database.AddFunctions
                 Fio = dto.UserName,
                 TgId = dto.UserId,
             };
-            var test = await getTest.Get(dto.Test.Id);
+            var test = await getTest.Get((ushort)dto.Test.Id);
             var countResults = await countTestResults.Get();
             var result = new TestResult()
             {

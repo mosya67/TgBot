@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Database.GetFunctions
 {
-    public class GetTestPage : IGetCommand<Task<IEnumerable<Test>>, PageDto>
+    public class GetTestPage : IGetCommand<Task<IEnumerable<Test>>, TestPageDto>
     {
         readonly Context context;
 
@@ -20,9 +20,9 @@ namespace Database.GetFunctions
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<IEnumerable<Test>> Get(PageDto dto)
+        public async Task<IEnumerable<Test>> Get(TestPageDto dto)
         {
-            return await context.Tests.Skip(dto.startPage * dto.countElementsInPage).Take(dto.countElementsInPage + 1).ToListAsync();
+            return await context.Tests.AsNoTracking().Include(e => e.Project).AsNoTracking().Where(e => e.Project.Id == dto.projectId).Skip(dto.pageSet.startPage * dto.pageSet.countElementsInPage).Take(dto.pageSet.countElementsInPage + 1).ToListAsync();
         }
     }
 }

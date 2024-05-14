@@ -22,7 +22,7 @@ namespace Database.GetFunctions
 
         public async Task<IList<Answer>> Get(LastResultDto dto)
         {
-            return await context.TestResults
+            var tmp = await context.TestResults
                 .AsNoTracking()
                 .Include(e => e.Answers)
                 .AsNoTracking()
@@ -31,8 +31,12 @@ namespace Database.GetFunctions
                 .Where(e => !e.IsPaused && e.Test.Id == dto.testId)
                 .OrderByDescending(e => e.Date)
                 .Take(dto.resultsCount)
-                .Select(e => e.Answers[dto.QuestNumb])
                 .ToListAsync();
+
+            if (tmp.Where(e => e.Answers.Count() < dto.QuestNumb).Count() != 0)
+                return await Task.Run(() => tmp.Select(e => e.Answers[dto.QuestNumb]).ToList());
+            else
+                return null;
         }
     }
 }

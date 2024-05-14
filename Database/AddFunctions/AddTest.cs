@@ -24,11 +24,11 @@ namespace Database.AddFunctions
         {
             uint Versionid = 1;
             var testId = 1;
+            test.Project = await context.Projects.SingleAsync(e => e.Id == test.Project.Id);
             if (await context.Tests.AsNoTracking().CountAsync() > 0)
             {
                 var a = await context.Tests.AsNoTracking().OrderBy(e => e.Id).LastAsync();
                 testId = a.Id + 1;
-#warning VersionId присваивается не совсем правильно (см вк)
             }
             await context.Tests.AddAsync(test);
             await context.SaveChangesAsync();

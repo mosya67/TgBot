@@ -6,21 +6,20 @@ using System.Threading.Tasks;
 
 namespace TgBot
 {
-    internal static class BotSettings
+    internal class BotSettings
     {
         /// <summary>
-        /// widthButtonsOnMessage и heightButtonsOnMessage используются для определения шир. и выс. кнопок выбора, например выбор пользователя, после чего ниже них могут быть другие кнопки
+        /// widthButtonsOnPage и heightButtonsOnPage используются для определения шир. и выс. кнопок выбора, например выбор пользователя, после чего ниже них могут быть другие кнопки
         /// </summary>
-        public const sbyte widthButtonsOnMessage = 2;
-        public const sbyte heightButtonsOnMessage = 2;
+        public const sbyte widthButtonsOnPage = 2;
+        public const sbyte heightButtonsOnPage = 2;
 
-        public const sbyte countElementsInPage = widthButtonsOnMessage * heightButtonsOnMessage;
+        public const sbyte countElementsInPage = widthButtonsOnPage * heightButtonsOnPage;
 
         public const string token = "6185570726:AAHBPUqL-qMSrmod9YxV6ot3IKrJ3YXzzCc";
-#if DEBUG
-        public const string Login = "Mostyaev_AS";
-        public const string Password = "artemmostaev12345--";
-#endif
+        /// <summary>
+        /// количество выводимых последних результатов на выводимую проверку в чек-листе
+        /// </summary>
         public const int CountLastResultsInCheck = 3;
     }
 }

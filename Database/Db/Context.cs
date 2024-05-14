@@ -21,11 +21,13 @@ namespace Database.Db
         public DbSet<User> Users { get; set; }
         public DbSet<Device> Devices { get; set; }
         public DbSet<TestVersion> TestVersions { get; set; }
+        public DbSet<Project> Projects { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
+#warning перед выдачей бота создать config файл со строкой подключения
                 optionsBuilder.UseSqlite("Data Source=db.db");
             }
         }
@@ -37,6 +39,7 @@ namespace Database.Db
             modelBuilder.ApplyConfiguration(new TestConf());
             modelBuilder.ApplyConfiguration(new TestResultConf());
             modelBuilder.ApplyConfiguration(new UserConf());
+            modelBuilder.ApplyConfiguration(new ProjectConf());
 
             OnModelCreatingPartial(modelBuilder);
         }

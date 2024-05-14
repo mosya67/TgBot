@@ -18,6 +18,7 @@ using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.Numeric;
 using System.IO;
 using System.ComponentModel.DataAnnotations;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace TelegramBot
 {
@@ -25,20 +26,22 @@ namespace TelegramBot
     {
         static IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveResultWithValidation;
         static IWriteCommand<Task<IReadOnlyList<ValidationResult>>, ResultTestDto> saveResult;
-        static IGetCommand<Task<IEnumerable<User>>, PageDto> getUsersPage;
         static IGetCommand<Task<IEnumerable<TestResult>>, GetStoppedTestsDto> getStoppedTest;
+        static IGetCommand<Task<IEnumerable<TestResult>>, StoppedTestResultPageDto> getStoppedTestsPage;
         static IGetCommand<Task<IEnumerable<Device>>, PageDto> getDevicesPage;
-        static IGetCommand<Task<IEnumerable<Test>>, PageDto> getTestPage;
+        static IGetCommand<Task<IEnumerable<User>>, PageDto> getUsersPage;
+        static IGetCommand<Task<IEnumerable<Test>>, TestPageDto> getTestPage;
         static IExcelGenerator<Task<FileDto>, ReportExcelDTO> excel;
+        static IGetCommand<Task<IEnumerable<Project>>, PageDto> getProjectPage;
         static IWriteCommand<Task, UpdateResultDto> updateTestResult;
         static IGetCommand<Task<TestResult>, ushort> getLastresult;
         static IGetCommand<Task<TestResult>, int> getTestResult;
-        static IGetCommand<Task<string>, ushort> getTestJson;
         static IWriteCommand<Task, string> addNewDevice;
         static IGetCommand<Task<Test>, ushort> getTest;
         static IWriteCommand<Task, Stream> changeTest;
         static IWriteCommand<Task, string> addNewUser;
         static IWriteCommand<Task, Test> AddTest;
+        static IWriteCommand<Task, Project> AddProject;
         static IGetCommand<Task<IList<Answer>>, LastResultDto> getLastAnswers;
 
         static IStatusGeneric<DateTime> ParseDate(string message)
@@ -92,6 +95,12 @@ namespace TelegramBot
 
             getUsersPage = new GetUsersPage(context);
 
+            AddProject = new AddProject(context);
+
+            getStoppedTestsPage = new GetStoppedTestsPage(context);
+
+            getProjectPage = new GetProjectPage(context);
+
             addNewUser = new AddNewUser(context);
 
             getDevicesPage = new GetDevicesPage(context);
@@ -103,8 +112,6 @@ namespace TelegramBot
             getTestResult = new GetTestResult(context);
 
             updateTestResult = new UpdateResult(context);
-
-            getTestJson = new GetTestJson(getTest);
 
             changeTest = new ChangeTest(new UpdateTest(new GetTest(context),
                 context));
@@ -141,6 +148,10 @@ namespace TelegramBot
             State.Remove(id);
         }
 
+        /// <summary>
+        /// отправляет следующую проверку
+        /// </summary>
+        /// <returns></returns>
         static async Task SendQuestion(ITelegramBotClient client, long id, sbyte QuestNumb)
         {
             State[id].LastAnswers = await getLastAnswers.Get(
@@ -148,9 +159,12 @@ namespace TelegramBot
 
             var lastResults_string = "";
 
-            for (int i = 0; i < State[id].LastAnswers.Count(); i++)
+            if (State[id].LastAnswers != null)
             {
-                lastResults_string += i + 1 + ") Результат: " + State[id].LastAnswers[i].Result + (!string.IsNullOrEmpty(State[id].LastAnswers[i].Comment) ? '\n' + "Комментарий: " + State[id].LastAnswers[i].Comment : null) + '\n';
+                for (int i = 0; i < State[id].LastAnswers.Count(); i++)
+                {
+                    lastResults_string += i + 1 + ") Результат: " + State[id].LastAnswers[i].Result + (!string.IsNullOrEmpty(State[id].LastAnswers[i].Comment) ? '\n' + "Комментарий: " + State[id].LastAnswers[i].Comment : null) + '\n';
+                }
             }
 
             await client.SendTextMessageAsync(id,
@@ -162,6 +176,10 @@ namespace TelegramBot
                         replyMarkup: answer);
         }
 
+        /// <summary>
+        /// отправляет следующую проверку, но с проверками на конец и тд
+        /// </summary>
+        /// <returns></returns>
         static async Task EndTestingOrNextQuestion(ITelegramBotClient client, long id)
         {
             if (!State[id].SkippedTestsFlag)
@@ -195,6 +213,10 @@ namespace TelegramBot
             await SendAndDeleteDocument(client, id, file.PathName);
         }
 
+        /// <summary>
+        /// получает номер проверки, где ответом был "LATER"
+        /// </summary>
+        /// <returns></returns>
         static sbyte? GetNumberSkippedQuestion(long id, sbyte questNumb)
         {
             for (sbyte i = 0; i < State[id].result.Answers.Count(); i++)
@@ -207,6 +229,10 @@ namespace TelegramBot
             return null;
         }
 
+        /// <summary>
+        /// отправка пропущенной проверки
+        /// </summary>
+        /// <returns></returns>
         static async Task SendSkippedQuestion(ITelegramBotClient client, long id, sbyte? question)
         {
             await client.SendTextMessageAsync(id, "Ваш пропуск:");
@@ -216,6 +242,11 @@ namespace TelegramBot
             await SendQuestion(client, id, State[id].QuestNumb);
         }
 
+        /// <summary>
+        /// отправляет документ пользователю, полсе чего удаляет его
+        /// </summary>
+        /// <param name="path">путь к файлу</param>
+        /// <returns></returns>
         static async Task SendAndDeleteDocument(ITelegramBotClient client, long id, string path)
         {
             await Task.Run(async () =>
@@ -230,6 +261,11 @@ namespace TelegramBot
             });
         }
 
+        /// <summary>
+        /// выводит пользователю список чек-листов, которые были переданы в tests
+        /// </summary>
+        /// <param name="tests">массив чек-листов</param>
+        /// <returns></returns>
         static async Task ViewTests(ITelegramBotClient client, long id, IEnumerable<Test> tests)
         {
             var buttons = GetButtonsFromPageToSelectTest(State[id].Role, 0, tests.ToList(), e => $"{e.Name}", e => e.Id.ToString());
@@ -242,6 +278,28 @@ namespace TelegramBot
             State[id].ChatState = ChatState.SelectingTest;
         }
 
+        /// <summary>
+        /// выводит пользователю список проектов, которые были переданы в testGrops
+        /// </summary>
+        /// <param name="testGrops">массив чек-листов</param>
+        /// <returns></returns>
+        async static Task ViewProjects(ITelegramBotClient client, long id, IEnumerable<Project> testGrops)
+        {
+            var buttons = GetButtonsFromPageToSelectTest(State[id].Role, 0, testGrops.ToList(), e => $"{e.Name}", e => e.Id.ToString());
+            if (testGrops.Count() == 0)
+            {
+                await client.SendTextMessageAsync(id, "Проектов нет", replyMarkup: buttons);
+                return;
+            }
+            await client.SendTextMessageAsync(id, "Выберете проект", replyMarkup: buttons);
+            State[id].ChatState = ChatState.SelectingProject;
+        }
+
+        /// <summary>
+        /// выводит пользователю список чек-листов для получения ecxcel файла, которые были переданы в tests
+        /// </summary>
+        /// <param name="tests">массив чек-листов</param>
+        /// <returns></returns>
         static async Task ViewTestsToReports(ITelegramBotClient client, long id, IEnumerable<Test> tests)
         {
             var buttons = GetButtonsFromPageToReports(0, tests.ToList(), e => $"{e.Name}", e => e.Id.ToString());
@@ -254,6 +312,10 @@ namespace TelegramBot
             State[id].ChatState = ChatState.SelectingTestToReports;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         static async Task CheckTest(ITelegramBotClient client, long id, ushort testid, sbyte questNumb, int mesId)
         {
             await client.EditMessageReplyMarkupAsync(id, mesId);
@@ -272,6 +334,10 @@ namespace TelegramBot
             State[id].QuestNumb = questNumb;
         }
 
+        /// <summary>
+        /// проверка на наличие остановленных тестирований
+        /// </summary>
+        /// <returns></returns>
         static async Task<bool> HasStoppedTests(ITelegramBotClient client, long id, int mesId)
         {
             var stoppedTests = await getStoppedTest.Get(new GetStoppedTestsDto { userId = State[id].result.UserId, testId = State[id].result.Test.Id });
@@ -284,6 +350,10 @@ namespace TelegramBot
             return true;
         }
 
+        /// <summary>
+        /// проверка на наличие пропущенных проверок
+        /// </summary>
+        /// <returns></returns>
         static async Task<bool> CheckSkippedQuestion(ITelegramBotClient client, long id, sbyte questNumb)
         {
             var question = GetNumberSkippedQuestion(id, questNumb);
@@ -294,6 +364,11 @@ namespace TelegramBot
             return question.HasValue;
         }
 
+        /// <summary>
+        /// переключает страницу
+        /// </summary>
+        /// <param name="getButtons">функция, которая возвращает кнопки для для бота</param>
+        /// <returns></returns>
         static async Task ChangePage(ITelegramBotClient client, long id, int mesId, Func<InlineKeyboardMarkup> getButtons)
         {
             var buttons = getButtons.Invoke();
@@ -301,9 +376,13 @@ namespace TelegramBot
             await client.EditMessageReplyMarkupAsync(id, mesId, replyMarkup: buttons);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         static async Task DeleteButtons(ITelegramBotClient client, long id)
         {
-            if (State[id].deleteButtons == null) return;
+            if (State[id].deleteButtons == null || State[id].deleteButtons.Count() == 0) return;
 
             foreach (var mesId in State[id].deleteButtons)
             {
@@ -317,10 +396,10 @@ namespace TelegramBot
         {
             var buttons = new List<List<InlineKeyboardButton>>();
             sbyte iterator = 0;
-            for (int i = 0; i < BotSettings.heightButtonsOnMessage; i++)
+            for (int i = 0; i < BotSettings.heightButtonsOnPage; i++)
             {
                 buttons.Add(new List<InlineKeyboardButton>());
-                for (int j = 0; j < BotSettings.widthButtonsOnMessage; j++, iterator++)
+                for (int j = 0; j < BotSettings.widthButtonsOnPage; j++, iterator++)
                 {
                     if (iterator < items.Count())
                         buttons[i].Add(InlineKeyboardButton.WithCallbackData(ButtonName(items[iterator]), ButtonIdentificator(items[iterator])));
@@ -341,9 +420,12 @@ namespace TelegramBot
         static InlineKeyboardMarkup GetButtonsFromAnwer(long id)
         {
             var buttons = new List<InlineKeyboardButton>();
-            for (sbyte i = 0; i < State[id].LastAnswers.Count(); i++)
+            if (State[id].LastAnswers != null)
             {
-                buttons.Add(InlineKeyboardButton.WithCallbackData((i + 1).ToString(), i.ToString()));
+                for (sbyte i = 0; i < State[id].LastAnswers.Count(); i++)
+                {
+                    buttons.Add(InlineKeyboardButton.WithCallbackData((i + 1).ToString(), i.ToString()));
+                }
             }
 
             buttons.Add(InlineKeyboardButton.WithCallbackData("Назад", "WriteLastResult_BackButton"));
@@ -354,10 +436,10 @@ namespace TelegramBot
         {
             var buttons = new List<List<InlineKeyboardButton>>();
             sbyte iterator = 0;
-            for (int i = 0; i < BotSettings.heightButtonsOnMessage; i++)
+            for (int i = 0; i < BotSettings.heightButtonsOnPage; i++)
             {
                 buttons.Add(new List<InlineKeyboardButton>());
-                for (int j = 0; j < BotSettings.widthButtonsOnMessage; j++, iterator++)
+                for (int j = 0; j < BotSettings.widthButtonsOnPage; j++, iterator++)
                 {
                     if (iterator < items.Count())
                         buttons[i].Add(InlineKeyboardButton.WithCallbackData(ButtonName(items[iterator]), ButtonIdentificator(items[iterator])));
@@ -379,10 +461,10 @@ namespace TelegramBot
         {
             var buttons = new List<List<InlineKeyboardButton>>();
             sbyte iterator = 0;
-            for (int i = 0; i < BotSettings.heightButtonsOnMessage; i++)
+            for (int i = 0; i < BotSettings.heightButtonsOnPage; i++)
             {
                 buttons.Add(new List<InlineKeyboardButton>());
-                for (int j = 0; j < BotSettings.widthButtonsOnMessage; j++, iterator++)
+                for (int j = 0; j < BotSettings.widthButtonsOnPage; j++, iterator++)
                 {
                     if (iterator < items.Count())
                         buttons[i].Add(InlineKeyboardButton.WithCallbackData(ButtonName(items[iterator]), ButtonIdentificator(items[iterator])));
@@ -405,10 +487,10 @@ namespace TelegramBot
         {
             var buttons = new List<List<InlineKeyboardButton>>();
             sbyte iterator = 0;
-            for (int i = 0; i < BotSettings.heightButtonsOnMessage; i++)
+            for (int i = 0; i < BotSettings.heightButtonsOnPage; i++)
             {
                 buttons.Add(new List<InlineKeyboardButton>());
-                for (int j = 0; j < BotSettings.widthButtonsOnMessage; j++, iterator++)
+                for (int j = 0; j < BotSettings.widthButtonsOnPage; j++, iterator++)
                 {
                     if (iterator < items.Count())
                         buttons[i].Add(InlineKeyboardButton.WithCallbackData(ButtonName(items[iterator]), ButtonIdentificator(items[iterator])));
@@ -425,6 +507,10 @@ namespace TelegramBot
             return new InlineKeyboardMarkup(buttons);
         }
 
+        /// <summary>
+        /// метод останавливает тестирование
+        /// </summary>
+        /// <returns></returns>
         static async Task StopTesting(long id, sbyte QuestNumb)
         {
             for (int i = QuestNumb; i < State[id].result.Answers.Count() && State[id].result.Answers[i].Result == null; i++)
@@ -438,6 +524,10 @@ namespace TelegramBot
             await saveResult.Write(State[id].result);
         }
 
+        /// <summary>
+        /// добавляет кнопку "назад"
+        /// </summary>
+        /// <param name="arr">массив кнопок куда будет добавлена кнопка "назад"</param>
         static void AddLastButton<T>(sbyte numberPage, ref List<InlineKeyboardButton> arr)
         {
             if (numberPage != 0)
@@ -446,6 +536,11 @@ namespace TelegramBot
             }
         }
 
+        /// <summary>
+        /// добавляет кнопку "далее"
+        /// </summary>
+        /// <param name="arr">массив кнопок куда будет добавлена кнопка "далее"</param>
+        /// <param name="items">элементы в страницу</param>
         static void AddNextButton<T>(IList<T> items, ref List<InlineKeyboardButton> arr)
         {
             if (items.Count() > BotSettings.countElementsInPage)
@@ -454,6 +549,13 @@ namespace TelegramBot
             }
         }
 
+        /// <summary>
+        /// добавляет кнопку "добавить". (необязательно именно ее, тк имя задается из вне, но обрабатывать ее все равно придется через "AddNew" + typeof(T).Name)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="role">роль, выбранная пользователем</param>
+        /// <param name="arr">массив в который мы добавим кнопку</param>
+        /// <param name="buttonName">имя кнопки</param>
         static void AddButton<T>(UserRole role, ref List<List<InlineKeyboardButton>> arr, string buttonName)
         {
             if (role == UserRole.Admin)
