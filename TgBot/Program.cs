@@ -30,12 +30,12 @@ namespace TelegramBot
 
             var proxy = new WebProxy
             {
-                //Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
-                //BypassProxyOnLocal = false,
-                //UseDefaultCredentials = false,
-                //Credentials = new NetworkCredential(
-                //    userName: BotSettings.Login,
-                //    password: BotSettings.Password)
+                Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential(
+                    userName: "Mironova",
+                    password: "PlaTo2395")
             };
             var Httpclient = new HttpClient(handler: new HttpClientHandler { Proxy = proxy }, disposeHandler: true);
             var client = new TelegramBotClient(BotSettings.token, Httpclient);
