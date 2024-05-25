@@ -10,7 +10,6 @@ namespace Domain.Dto
     {
         public DateTime? fdate;
         public DateTime? ldate;
-        public uint TestVersion;
         public sbyte variant;
         public ushort TestId;
     }

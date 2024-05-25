@@ -27,7 +27,6 @@ namespace Database.Db
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning перед выдачей бота создать config файл со строкой подключения
                 optionsBuilder.UseSqlite("Data Source=db.db");
             }
         }

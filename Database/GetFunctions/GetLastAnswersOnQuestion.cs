@@ -29,11 +29,12 @@ namespace Database.GetFunctions
                 .Include(e => e.Test)
                 .AsNoTracking()
                 .Where(e => !e.IsPaused && e.Test.Id == dto.testId)
+                .Where(e => e.Answers.Count() > dto.QuestNumb)
                 .OrderByDescending(e => e.Date)
                 .Take(dto.resultsCount)
                 .ToListAsync();
 
-            if (tmp.Where(e => e.Answers.Count() < dto.QuestNumb).Count() != 0)
+            if (tmp != null && tmp.Count() != 0)
                 return await Task.Run(() => tmp.Select(e => e.Answers[dto.QuestNumb]).ToList());
             else
                 return null;

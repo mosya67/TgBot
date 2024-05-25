@@ -16,11 +16,12 @@ namespace TelegramBot
         public int[] deleteButtons;
         public bool SkippedTestsFlag = false;
         public sbyte NumerPage = 0;
-        public bool PassingStoppedTest = false;
         public int ResultId;
         public ushort ProjectId;
         public IList<Answer> LastAnswers;
         public UserRole Role = UserRole.None;
+
+        public bool isPassingStoppedTest = false; // состояние для отладки!!!
 
         public UserState()
         {
@@ -53,6 +54,8 @@ namespace TelegramBot
         WriteLastResult,
         SelectingProject,
         AddProject,
+        SelectingProjectForReport,
+        ChangeSettings,
     }
 
     public enum UserRole

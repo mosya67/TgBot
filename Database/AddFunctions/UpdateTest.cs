@@ -51,7 +51,6 @@ namespace Database.AddFunctions
 
             var lastQuest = await context.Questions.AsNoTracking().OrderBy(e => e.Id).LastOrDefaultAsync();
             var lastVers = await context.TestVersions.AsNoTracking().OrderBy(e => e.Id).LastOrDefaultAsync();
-#warning возможно стоит начинать цикл с оличества вопросов в старом тесте
             for (ushort i = 0; i < newTest.Questions.Count(); i++)
             {
                 newTest.Questions[i].Id = (ushort)(lastQuest.Id + i + 1);

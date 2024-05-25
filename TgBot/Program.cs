@@ -23,22 +23,41 @@ namespace TelegramBot
     internal partial class Program
     {
         static Dictionary<long, UserState> State;
+        static BotSettings set = new BotSettings();
 
         static async Task Main(string[] args)
         {
+            if (!File.Exists("настройки бота.json"))
+            {
+                await resetsettings("настройки бота.json");
+            }
+            else
+            {
+                string jsonContent = File.ReadAllText("настройки бота.json");
+
+                var settings = JsonConvert.DeserializeObject<BotSettings>(jsonContent);
+
+                set = settings;
+            }
+
+            Console.WriteLine("Имя текущего пользователя: " + Environment.UserName);
+            Console.Write("Пароль от пк: ");
+
+            var password = Console.ReadLine();
+
             ComponentInitialization();
 
             var proxy = new WebProxy
             {
                 //Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
-                //BypassProxyOnLocal = false,
-                //UseDefaultCredentials = false,
-                //Credentials = new NetworkCredential(
-                //    userName: BotSettings.Login,
-                //    password: BotSettings.Password)
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential(
+                    userName: Environment.UserName,
+                    password: password)
             };
             var Httpclient = new HttpClient(handler: new HttpClientHandler { Proxy = proxy }, disposeHandler: true);
-            var client = new TelegramBotClient(BotSettings.token, Httpclient);
+            var client = new TelegramBotClient(set.token, Httpclient);
             client.StartReceiving(Update, Error);
             Console.WriteLine("Bot started");
             Console.Read();
@@ -82,13 +101,74 @@ namespace TelegramBot
                 State[id].ChatState = ChatState.None;
                 State[id].SkippedTestsFlag = false;
                 await client.SendTextMessageAsync(id, "вы можете выбрать тест или получить отчеты", replyMarkup: start);
-                return;
+            }
+            else if (message?.Text?.ToLower() == "/settings")
+            {
+                State[id].ChatState = ChatState.None;
+                State[id].SkippedTestsFlag = false;
+
+                var path = "настройки бота.json";
+
+                if (!File.Exists(path))
+                {
+                    var settings = new JsonSerializerSettings
+                    {
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                        Formatting = Formatting.Indented
+                    };
+                    string json = JsonConvert.SerializeObject(set, settings);
+                    await File.WriteAllTextAsync(path, json);
+                }
+
+                await SendDocument(client, id, path);
+                await client.SendTextMessageAsync(id, "Измените этот файл и отправьте обратно мне");
+                State[id].ChatState = ChatState.ChangeSettings;
+            } // выдача файла с настройками (хранится там же где и бд), если файла нет, то создает новый с дефолтными параметрами
+            else if (message?.Text?.ToLower() == "/resetsettings") // сбрасывает настройки до дефолтных значений и, если файла с ними нет, создает его
+            {
+                await client.SendTextMessageAsync(id, "сброс настроек");
+                var path = "настройки бота.json";
+                await resetsettings(path);
+                await client.SendTextMessageAsync(id, "готово");
+            }
+            else if (State[id].ChatState == ChatState.ChangeSettings && message.Type == MessageType.Document)
+            {
+                var file = await client.GetFileAsync(message.Document.FileId);
+
+                using (var stream = new MemoryStream())
+                {
+                    await client.DownloadFileAsync(file.FilePath, stream);
+
+                    try
+                    {
+                        stream.Position = 0;
+                        using (var reader = new StreamReader(stream))
+                        {
+                            string jsonContent = await reader.ReadToEndAsync();
+
+                            var settings = JsonConvert.DeserializeObject<BotSettings>(jsonContent);
+
+                            set = settings;
+
+                            File.WriteAllText("настройки бота.json", jsonContent);
+                        }
+                        await client.SendTextMessageAsync(id, $"готово");
+                    }
+                    catch (Exception ex)
+                    {
+                        await client.SendTextMessageAsync(id, "не удалось запарсить файл\n" + ex.Message + '\n' + ex.InnerException?.Message);
+                        await client.SendTextMessageAsync(id, "Проверьте файл и попробуйте еще раз");
+                    }
+                }
+
+                State[id].ChatState = ChatState.None;
+                await client.SendTextMessageAsync(id, "вы можете выбрать тест или получить отчеты", replyMarkup: start);
             }
             else if (State[id].ChatState == ChatState.AddNewUser)
             {
                 await DeleteButtons(client, id);
                 await addNewUser.Write(message.Text);
-                var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
+                var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = set.countElementsInPage });
                 var buttons = GetButtonsFromPage(State[id].Role, State[id].NumerPage, users.ToList(), e => e.Fio, e => e.TgId.ToString());
                 Message msg = await client.SendTextMessageAsync(id, "Выберите тестировщика", replyMarkup: buttons);
                 State[id].deleteButtons = new int[] { msg.MessageId };
@@ -98,7 +178,7 @@ namespace TelegramBot
             {
                 await DeleteButtons(client, id);
                 await addNewDevice.Write(message.Text);
-                var devicesPage = await getDevicesPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
+                var devicesPage = await getDevicesPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = set.countElementsInPage });
                 var buttons = GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name);
                 Message msg = await client.SendTextMessageAsync(id, "Выберите окружение", replyMarkup: buttons);
                 State[id].deleteButtons = new int[] { msg.MessageId };
@@ -125,11 +205,12 @@ namespace TelegramBot
             else if (State[id].ChatState == ChatState.AddProject)
             {
                 await AddProject.Write(new Project { Name = message.Text });
-                var groups = await getProjectPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
+                var groups = await getProjectPage.Get(new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 });
                 await ViewProjects(client, id, groups);
             }
             else if (State[id].ChatState == ChatState.FirtsDate)
             {
+                await DeleteButtons(client, id);
                 var date = ParseDate(message.Text);
                 if (date.HasErrors)
                 {
@@ -140,10 +221,12 @@ namespace TelegramBot
 
                 State[id].datesDto.fdate = date.Result;
                 State[id].ChatState = ChatState.LastDate;
-                await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
+                var msg = await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
+                State[id].deleteButtons = new int[] { msg.MessageId };
             }
             else if (State[id].ChatState == ChatState.LastDate)
             {
+                await DeleteButtons(client, id);
                 var date = ParseDate(message.Text);
                 if (date.HasErrors)
                 {
@@ -177,7 +260,7 @@ namespace TelegramBot
                 State[id].result.AdditionalCommentForTest = message.Text;
                 State[id].NumerPage = 0;
                 State[id].ChatState = ChatState.SelectionDevice;
-                var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
+                var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage });
                 var btns = GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name);
                 Message msg = await client.SendTextMessageAsync(id, "Выберите окружение", replyMarkup: btns);
                 State[id].deleteButtons = new[] { msg.MessageId };
@@ -212,7 +295,7 @@ namespace TelegramBot
                         }
                         await client.SendTextMessageAsync(id, $"готово");
                         State[id].result.Answers = new List<Answer>();
-                        var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
+                        var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
                         await ViewTests(client, id, tests);
                     }
                     catch (Exception ex)
@@ -235,7 +318,7 @@ namespace TelegramBot
                         await changeTest.Write(stream);
                         await client.SendTextMessageAsync(id, $"готово");
                         State[id].result.Answers = new List<Answer>();
-                        var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
+                        var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
                         await ViewTests(client, id, tests);
                     }
                     catch (ArgumentException ex)
@@ -272,7 +355,7 @@ namespace TelegramBot
                     State[id].result.TestResultId = State[id].ResultId;
                     await StopTesting(id, State[id].QuestNumb);
                     await client.SendTextMessageAsync(id, "тест был остановлен");
-                    var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
+                    var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
                     await client.EditMessageReplyMarkupAsync(id, mesId);
                     await ViewTests(client, id, tests);
                     return;
@@ -310,6 +393,7 @@ namespace TelegramBot
             }
             else if (query.Data == "NextCom")
             {
+                State[id].deleteButtons = null;
                 State[id].ChatState = ChatState.AdditionalCommentForTest;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 await client.SendTextMessageAsync(id, "Дополнительный комментарий к тесту: пусто");
@@ -318,11 +402,12 @@ namespace TelegramBot
             }
             else if (query.Data == "NextAdCom")
             {
+                State[id].deleteButtons = null;
                 State[id].NumerPage = 0;
                 State[id].ChatState = ChatState.SelectionDevice;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 await client.SendTextMessageAsync(id, "Дополнительный комментарий к тесту: пусто");
-                var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
+                var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage });
                 var btns = GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name);
                 await client.SendTextMessageAsync(id, "Выберите окружение:", replyMarkup: btns);
             }
@@ -343,7 +428,7 @@ namespace TelegramBot
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 await client.SendTextMessageAsync(id, "Ваша роль: " + role);
 
-                var groups = await getProjectPage.Get(new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 });
+                var groups = await getProjectPage.Get(new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 });
                 await ViewProjects(client, id, groups);
             }
             else if (query.Data == "Tests")
@@ -355,22 +440,24 @@ namespace TelegramBot
             }
             else if (query.Data == "Reports")
             {
-                var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
-                await ViewTestsToReports(client, id, tests);
+                var groups = await getProjectPage.Get(new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 });
+                await ViewProjectsForReport(client, id, groups);
+
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                State[id].ChatState = ChatState.SelectingTestToReports;
+                State[id].ChatState = ChatState.SelectingProjectForReport;
             }
             else if (query.Data == "SkipFirstDate")
             {
-                await client.EditMessageReplyMarkupAsync(id, mesId);
+                await DeleteButtons(client, id);
                 await client.SendTextMessageAsync(id, "Введенная начальная дата: пусто");
                 State[id].ChatState = ChatState.LastDate;
-                await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
+                var msg = await client.SendTextMessageAsync(id, "конечная дата:", replyMarkup: skipldate);
+                State[id].deleteButtons = new int[] { msg.MessageId };
             }
             else if (query.Data == "SkipLastDate")
             {
-                await client.EditMessageReplyMarkupAsync(id, mesId);
-                await client.SendTextMessageAsync(id, "Введенная начальная дата: пусто");
+                await DeleteButtons(client, id);
+                await client.SendTextMessageAsync(id, "Введенная конечная дата: пусто");
                 var file = await excel.WriteResultsAsync(State[id].datesDto);
                 if (file.Errors == null)
                 {
@@ -386,7 +473,7 @@ namespace TelegramBot
             else if (query.Data == "BackToSelectingUser")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
+                var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = set.countElementsInPage });
                 var buttons = GetButtonsFromPage(State[id].Role, State[id].NumerPage, users.ToList(), e => e.Fio, e => e.TgId.ToString());
                 await client.SendTextMessageAsync(id, "Выберите тестировщика", replyMarkup: buttons);
                 State[id].ChatState = ChatState.SelectionUser;
@@ -402,7 +489,7 @@ namespace TelegramBot
                 };
                 var now = DateTime.Now;
                 string json = await Task.Run(() => JsonConvert.SerializeObject(test, settings));
-                var path = test.Name + '_' + DateTime.Now.Millisecond + ".json";
+                var path = test.Name + ' ' + DateTime.Now.ToShortDateString() + ".json";
                 await File.WriteAllTextAsync(path, json);
 
                 await SendAndDeleteDocument(client, id, path);
@@ -415,7 +502,7 @@ namespace TelegramBot
                 for (int i = 0; i < State[id].Questions.Count(); i++)
                     State[id].result.Answers.Add(new Answer());
 
-                var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
+                var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = set.countElementsInPage });
 
                 var buttons = GetButtonsFromPage(State[id].Role, State[id].NumerPage, users.ToList(), e => e.Fio, e => e.TgId.ToString());
 
@@ -425,7 +512,7 @@ namespace TelegramBot
             else if (query.Data == "BackToSelectingDevice")
             {
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                var devicesPage = await getDevicesPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
+                var devicesPage = await getDevicesPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = set.countElementsInPage });
                 var buttons = GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name);
                 await client.SendTextMessageAsync(id, "Выберите окружение", replyMarkup: buttons);
                 State[id].ChatState = ChatState.SelectionDevice;
@@ -503,13 +590,13 @@ namespace TelegramBot
             else if (query.Data == "LastDevicePage")
             {
                 --State[id].NumerPage;
-                var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
+                var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage });
                 await ChangePage(client, id, mesId, () => GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name));
             }
             else if (query.Data == "NextDevicePage")
             {
                 ++State[id].NumerPage;
-                var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
+                var devicesPage = await getDevicesPage.Get(new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage });
                 await ChangePage(client, id, mesId, () => GetButtonsFromPage(UserRole.Admin, State[id].NumerPage, devicesPage.ToList(), e => e.Name, e => e.Name));
             }
             else if (query.Data == "NextTestResultPage")
@@ -517,7 +604,7 @@ namespace TelegramBot
                 ++State[id].NumerPage;
                 var stoppedTestsPage = await getStoppedTestsPage.Get(new StoppedTestResultPageDto
                 {
-                    pageSet = new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage },
+                    pageSet = new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage },
                     userId = State[id].result.UserId,
                     testId = State[id].result.Test.Id
                 });
@@ -528,7 +615,7 @@ namespace TelegramBot
                 --State[id].NumerPage;
                 var stoppedTestsPage = await getStoppedTestsPage.Get(new StoppedTestResultPageDto
                 {
-                    pageSet = new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage },
+                    pageSet = new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage },
                     userId = State[id].result.UserId,
                     testId = State[id].result.Test.Id
                 });
@@ -537,20 +624,20 @@ namespace TelegramBot
             else if (query.Data == "LastUserPage")
             {
                 --State[id].NumerPage;
-                var buttons = await getUsersPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
+                var buttons = await getUsersPage.Get(new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage });
                 await ChangePage(client, id, mesId, () => GetButtonsFromPage(State[id].Role, State[id].NumerPage, buttons.ToList(), e => e.Fio, e => e.TgId.ToString()));
             }
             else if (query.Data == "NextUserPage")
             {
                 ++State[id].NumerPage;
-                var buttons = await getUsersPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
+                var buttons = await getUsersPage.Get(new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage });
                 await ChangePage(client, id, mesId, () => GetButtonsFromPage(State[id].Role, State[id].NumerPage, buttons.ToList(), e => e.Fio, e => e.TgId.ToString()));
             }
             else if (query.Data == "NextTestPage")
             {
                 InlineKeyboardMarkup buttons = null;
                 ++State[id].NumerPage;
-                var page = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage }, projectId = State[id].ProjectId });
+                var page = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage }, projectId = State[id].ProjectId });
 
                 //нужно для того, чтобы кнопки добавить в отчетах не было
                 if (State[id].ChatState != ChatState.SelectingTestToReports)
@@ -563,7 +650,7 @@ namespace TelegramBot
             {
                 --State[id].NumerPage;
                 InlineKeyboardMarkup buttons = null;
-                var page = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage }, projectId = State[id].ProjectId });
+                var page = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage }, projectId = State[id].ProjectId });
 
                 //нужно для того, чтобы кнопки добавить в отчетах не было
                 if (State[id].ChatState != ChatState.SelectingTestToReports)
@@ -575,14 +662,30 @@ namespace TelegramBot
             else if (query.Data == "NextProjectPage")
             {
                 ++State[id].NumerPage;
-                var buttons = await getProjectPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
-                await ChangePage(client, id, mesId, () => GetButtonsFromPage(State[id].Role, State[id].NumerPage, buttons.ToList(), e => e.Name, e => e.Id.ToString()));
+                InlineKeyboardMarkup buttons = null;
+                var page = await getProjectPage.Get(new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage });
+
+                //нужно для того, чтобы кнопки добавить в отчетах не было
+                if (State[id].ChatState != ChatState.SelectingProjectForReport)
+                    buttons = GetButtonsFromPageToSelectTest(State[id].Role, State[id].NumerPage, page.ToList(), e => $"{e.Name}", e => e.Id.ToString());
+                else
+                    buttons = GetButtonsFromPageToReports(State[id].NumerPage, page.ToList(), e => $"{e.Name}", e => e.Id.ToString());
+
+                await ChangePage(client, id, mesId, () => buttons);
             }
             else if (query.Data == "LastProjectPage")
             {
                 --State[id].NumerPage;
-                var buttons = await getProjectPage.Get(new PageDto() { countElementsInPage = BotSettings.countElementsInPage, startPage = State[id].NumerPage });
-                await ChangePage(client, id, mesId, () => GetButtonsFromPage(State[id].Role, State[id].NumerPage, buttons.ToList(), e => e.Name, e => e.Id.ToString()));
+                InlineKeyboardMarkup buttons = null;
+                var page = await getProjectPage.Get(new PageDto() { countElementsInPage = set.countElementsInPage, startPage = State[id].NumerPage });
+
+                //нужно для того, чтобы кнопки добавить в отчетах не было
+                if (State[id].ChatState != ChatState.SelectingProjectForReport)
+                    buttons = GetButtonsFromPageToSelectTest(State[id].Role, State[id].NumerPage, page.ToList(), e => $"{e.Name}", e => e.Id.ToString());
+                else
+                    buttons = GetButtonsFromPageToReports(State[id].NumerPage, page.ToList(), e => $"{e.Name}", e => e.Id.ToString());
+
+                await ChangePage(client, id, mesId, () => buttons);
             }
             #endregion Переключение страниц
             else if (State[id].ChatState == ChatState.SelectionUser && long.TryParse(query.Data, out State[id].result.UserId))
@@ -609,12 +712,12 @@ namespace TelegramBot
             }
             else if (State[id].ChatState == ChatState.SelectionDevice)
             {
+                State[id].deleteButtons = null;
                 State[id].result.Device = query.Data;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 await client.SendTextMessageAsync(id, "Выбранное окружение: " + query.Data);
                 State[id].ChatState = ChatState.Release;
-                Message msg = await client.SendTextMessageAsync(id, "Введите сборку");
-                State[id].deleteButtons = new[] { msg.MessageId };
+                await client.SendTextMessageAsync(id, "Введите сборку");
             }
             else if (State[id].ChatState == ChatState.GetReport && sbyte.TryParse(query.Data, out State[id].datesDto.variant))
             {
@@ -636,7 +739,8 @@ namespace TelegramBot
                 if (State[id].datesDto.variant == 4)
                 {
                     State[id].ChatState = ChatState.FirtsDate;
-                    await client.SendTextMessageAsync(id, "начальная дата:", replyMarkup: skipfdate);
+                    var msg = await client.SendTextMessageAsync(id, "начальная дата:", replyMarkup: skipfdate);
+                    State[id].deleteButtons = new int[]{ msg.MessageId };
                     return;
                 }
 
@@ -664,10 +768,30 @@ namespace TelegramBot
 
                 State[id].NumerPage = 0;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                await client.SendTextMessageAsync(id, "Выбранный тест: " + variant);
+                await client.SendTextMessageAsync(id, "Выбранный проект: " + variant);
                 State[id].ProjectId = projectid;
-                var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = BotSettings.countElementsInPage, startPage = 0 }, projectId = projectid });
+                var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 }, projectId = projectid });
                 await ViewTests(client, id, tests);
+            }
+            else if (State[id].ChatState == ChatState.SelectingProjectForReport && ushort.TryParse(query?.Data, out State[id].ProjectId))
+            {
+                string variant = "";
+
+                foreach (var hei in query.Message.ReplyMarkup.InlineKeyboard)
+                {
+                    foreach (var width in hei)
+                    {
+                        if (query.Data == width.CallbackData)
+                            variant = width.Text;
+                    }
+                }
+
+                State[id].NumerPage = 0;
+                await client.EditMessageReplyMarkupAsync(id, mesId);
+                await client.SendTextMessageAsync(id, "Выбранный проект: " + variant);
+                var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
+                await ViewTestsForReports(client, id, tests);
+                State[id].ChatState = ChatState.SelectingTestToReports;
             }
             else if (State[id].ChatState == ChatState.SelectingTest && ushort.TryParse(query?.Data, out testid))
             {
@@ -697,7 +821,7 @@ namespace TelegramBot
                     for (int i = 0; i < State[id].Questions.Count(); i++)
                         State[id].result.Answers.Add(new Answer());
 
-                    var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = BotSettings.countElementsInPage });
+                    var users = await getUsersPage.Get(new PageDto() { startPage = State[id].NumerPage, countElementsInPage = set.countElementsInPage });
 
                     var buttons = GetButtonsFromPage(State[id].Role, State[id].NumerPage, users.ToList(), e => e.Fio, e => e.TgId.ToString());
 
@@ -710,7 +834,6 @@ namespace TelegramBot
                 State[id].NumerPage = 0;
                 var test = await getTest.Get(testid);
                 await client.SendTextMessageAsync(id, "Выбранный тест: " + test.Name);
-                State[id].datesDto.TestVersion = test.TestVersionId;
                 State[id].datesDto.TestId = testid;
                 await client.EditMessageReplyMarkupAsync(id, mesId);
                 State[id].ChatState = ChatState.GetReport;
@@ -718,13 +841,23 @@ namespace TelegramBot
             }
             else if (State[id].ChatState == ChatState.SelectingStoppedTest && int.TryParse(query.Data, out State[id].ResultId))
             {
+                State[id].isPassingStoppedTest = true;
+
                 await client.EditMessageReplyMarkupAsync(id, mesId);
-                State[id].PassingStoppedTest = true;
+                State[id].SkippedTestsFlag = true; //edit
                 var testResult = await getTestResult.Get(State[id].ResultId);
                 await client.SendTextMessageAsync(id, "Вы продолжили тестирование, остановленное " + testResult.Date.ToShortDateString() + " в " + testResult.Date.ToShortTimeString());
                 State[id].result.Answers = testResult.Answers;
                 State[id].ChatState = ChatState.AnswersTheQuestion;
-                await SendQuestion(client, id, State[id].QuestNumb);
+
+                if (testResult.PausedQuestionNumber == null)
+                {
+                    await client.SendTextMessageAsync(id, "по каким-то причинам номер проверки, на которой остановилось тестирование, было null ");
+                    return;
+                }
+                State[id].QuestNumb = testResult.PausedQuestionNumber.Value;
+
+                await SendQuestion(client, id, testResult.PausedQuestionNumber.Value);
             }
             else if (State[id].ChatState == ChatState.WriteLastResult && sbyte.TryParse(query.Data, out sbyte lastResultNumber))
             {

@@ -31,30 +31,30 @@ namespace Database.GetFunctions
             switch (dto.variant)
             {
                 case 1:
-                    results.Add(await temp.OrderByDescending(e => e.Date).FirstOrDefaultAsync());
+                    results = await temp.OrderByDescending(e => e.Date).Take(1).ToListAsync();
                     break;
                 case 2:
                     results = await temp.OrderByDescending(e => e.Date).Take(3).ToListAsync();
                     break;
                 case 3:
-                    results = await temp.ToListAsync();
+                    results = await temp.OrderByDescending(e => e.Date).ToListAsync();
                     break;
                 case 4:
                     if (dto.fdate == null && dto.ldate != null)
                     {
-                        results = await temp.Where(p => p.Date.Date <= dto.ldate.Value.Date).ToListAsync();
+                        results = await temp.Where(p => p.Date <= dto.ldate).OrderByDescending(e => e.Date).ToListAsync();
                     }
                     else if (dto.fdate != null && dto.ldate == null)
                     {
-                        results = await temp.Where(p => p.Date.Date >= dto.fdate.Value.Date).ToListAsync();
+                        results = await temp.Where(p => p.Date >= dto.fdate).OrderByDescending(e => e.Date).ToListAsync();
                     }
                     else if (dto.fdate != null && dto.ldate != null)
                     {
-                        results = await temp.Where(e => e.Date.Date >= dto.fdate.Value.Date && e.Date.Date <= dto.ldate.Value.Date).ToListAsync();
+                        results = await temp.Where(e => e.Date >= dto.fdate && e.Date <= dto.ldate).OrderByDescending(e => e.Date).ToListAsync();
                     }
                     else
                     {
-                        results = await temp.ToListAsync();
+                        results = await temp.OrderByDescending(e => e.Date).ToListAsync();
                     }
                     break;
             }
