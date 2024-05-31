@@ -27,6 +27,30 @@ namespace TelegramBot
 
         static async Task Main(string[] args)
         {
+            LoginInfo login = new LoginInfo();
+            if (!File.Exists("login info.json"))
+            {
+                var s = new LoginInfo { login = "Mironova", password = "PlaTo2395" };
+
+                login = s;
+
+                var settings = new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    Formatting = Formatting.Indented
+                };
+                string json = JsonConvert.SerializeObject(s, settings);
+                await File.WriteAllTextAsync("login info.json", json);
+            }
+            else
+            {
+                string jsonContent = File.ReadAllText("login info.json");
+
+                var _login = JsonConvert.DeserializeObject<LoginInfo>(jsonContent);
+
+                login = _login;
+            }
+
             if (!File.Exists("настройки бота.json"))
             {
                 await resetsettings("настройки бота.json");
@@ -40,21 +64,16 @@ namespace TelegramBot
                 set = settings;
             }
 
-            Console.WriteLine("Имя текущего пользователя: " + Environment.UserName);
-            Console.Write("Пароль от пк: ");
-
-            var password = Console.ReadLine();
-
             ComponentInitialization();
 
             var proxy = new WebProxy
             {
-                //Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
+                Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(
-                    userName: Environment.UserName,
-                    password: password)
+                    userName: login.login,
+                    password: login.password)
             };
             var Httpclient = new HttpClient(handler: new HttpClientHandler { Proxy = proxy }, disposeHandler: true);
             var client = new TelegramBotClient(set.token, Httpclient);
