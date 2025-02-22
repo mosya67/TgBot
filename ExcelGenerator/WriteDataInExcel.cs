@@ -1,13 +1,9 @@
 ﻿using Domain.Model;
 using OfficeOpenXml;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
 using OfficeOpenXml.Style;
 using StatusGeneric;
-using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace ExcelServices
 {

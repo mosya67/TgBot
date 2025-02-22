@@ -17,6 +17,7 @@ using File = System.IO.File;
 using Newtonsoft.Json;
 using Telegram.Bot.Types.ReplyMarkups;
 using System.Data;
+using ExcelParser;
 
 namespace TelegramBot
 {
@@ -68,12 +69,12 @@ namespace TelegramBot
 
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
-                BypassProxyOnLocal = false,
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(
-                    userName: login.login,
-                    password: login.password)
+                //Address = new Uri($"http://gw-srv.elektron.spb.su:3128"),
+                //BypassProxyOnLocal = false,
+                //UseDefaultCredentials = false,
+                //Credentials = new NetworkCredential(
+                //    userName: login.login,
+                //    password: login.password)
             };
             var Httpclient = new HttpClient(handler: new HttpClientHandler { Proxy = proxy }, disposeHandler: true);
             var client = new TelegramBotClient(set.token, Httpclient);
@@ -294,24 +295,39 @@ namespace TelegramBot
             else if (State[id].ChatState == ChatState.AddTest && message.Type == MessageType.Document)
             {
                 var file = await client.GetFileAsync(message.Document.FileId);
-
+                
                 using (var stream = new MemoryStream())
                 {
-                    await client.DownloadFileAsync(file.FilePath, stream);
+                    string filepath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, message.Document.FileName);
+                    Test test = null;
 
                     try
                     {
-                        stream.Position = 0;
-                        using (var reader = new StreamReader(stream))
+                        using (var fileStream = new FileStream(filepath, FileMode.Create))
                         {
-                            string jsonContent = await reader.ReadToEndAsync();
-
-                            var test = JsonConvert.DeserializeObject<Test>(jsonContent);
-
-                            test.Project = new Project { Id = State[id].ProjectId };
-
-                            await AddTest.Write(test);
+                            await client.DownloadFileAsync(file.FilePath, fileStream);
                         }
+                        FileInfo finfo = new FileInfo(filepath);
+
+                        if (finfo.Extension == ".xls" || finfo.Extension == ".xlsx")
+                        {
+                            test = SitichkoExcelParser.Parser(filepath);
+                        }
+                        else
+                        {
+                            stream.Position = 0;
+                            using (var reader = new StreamReader(stream))
+                            {
+                                string jsonContent = await reader.ReadToEndAsync();
+
+                                test = JsonConvert.DeserializeObject<Test>(jsonContent);
+
+                            }
+                        }
+                        File.Delete(filepath);
+                        test.Project = new Project { Id = State[id].ProjectId };
+
+                        await AddTest.Write(test);
                         await client.SendTextMessageAsync(id, $"готово");
                         State[id].result.Answers = new List<Answer>();
                         var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
@@ -323,6 +339,7 @@ namespace TelegramBot
                         await client.SendTextMessageAsync(id, "Проверьте файл и попробуйте еще раз");
                     }
                 }
+                
             }
             else if (State[id].ChatState == ChatState.ChangeTest && message.Type == MessageType.Document)
             {
@@ -585,7 +602,7 @@ namespace TelegramBot
                 string json = JsonConvert.SerializeObject(test, settings);
                 var path = "шаблон" + DateTime.Now.Millisecond + ".json";
                 await File.WriteAllTextAsync(path, json);
-                await client.SendTextMessageAsync(id, "заполните шаблон и отправьте мне");
+                await client.SendTextMessageAsync(id, "заполните шаблон и отправьте мне ИЛИ отправьте xls файл с тестом с сайта https://sitechco.ru/");
                 await SendAndDeleteDocument(client, id, path);
                 State[id].ChatState = ChatState.AddTest;
 
