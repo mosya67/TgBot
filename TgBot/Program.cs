@@ -18,6 +18,7 @@ using Newtonsoft.Json;
 using Telegram.Bot.Types.ReplyMarkups;
 using System.Data;
 using ExcelParser;
+using XmlParser;
 
 namespace TelegramBot
 {
@@ -309,29 +310,38 @@ namespace TelegramBot
                         }
                         FileInfo finfo = new FileInfo(filepath);
 
-                        if (finfo.Extension == ".xls" || finfo.Extension == ".xlsx")
+                        if (finfo.Exists)
                         {
-                            test = SitichkoExcelParser.Parser(filepath);
+                            if (finfo.Extension == ".xls" || finfo.Extension == ".xlsx" || finfo.Extension.ToLower() == ".html")
+                            {
+                                test = SitichkoExcelParser.Parser(finfo);
+                            }
+                            else if (finfo.Extension == ".xml")
+                            {
+                                SitichkoXmlParser.Parse(finfo);
+                            }
+                            else
+                            {
+                                stream.Position = 0;
+                                using (var reader = new StreamReader(stream))
+                                {
+                                    string jsonContent = await reader.ReadToEndAsync();
+
+                                    test = JsonConvert.DeserializeObject<Test>(jsonContent);
+
+                                }
+                            }
+                            File.Delete(filepath);
+                            test.Project = new Project { Id = State[id].ProjectId };
+
+                            await AddTest.Write(test);
+                            await client.SendTextMessageAsync(id, $"готово");
+                            State[id].result.Answers = new List<Answer>();
+                            var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
+                            await ViewTests(client, id, tests);
                         }
                         else
-                        {
-                            stream.Position = 0;
-                            using (var reader = new StreamReader(stream))
-                            {
-                                string jsonContent = await reader.ReadToEndAsync();
-
-                                test = JsonConvert.DeserializeObject<Test>(jsonContent);
-
-                            }
-                        }
-                        File.Delete(filepath);
-                        test.Project = new Project { Id = State[id].ProjectId };
-
-                        await AddTest.Write(test);
-                        await client.SendTextMessageAsync(id, $"готово");
-                        State[id].result.Answers = new List<Answer>();
-                        var tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
-                        await ViewTests(client, id, tests);
+                            await client.SendTextMessageAsync(id, "ошибка: файл не существует");
                     }
                     catch (Exception ex)
                     {
