@@ -316,9 +316,22 @@ namespace TelegramBot
                             {
                                 test = SitichkoExcelParser.Parser(finfo);
                             }
-                            else if (finfo.Extension == ".xml")
+                            else if (finfo.Extension == ".xml" || finfo.Extension == ".txt")
                             {
-                                SitichkoXmlParser.Parse(finfo);
+                                List<Test> xmltests = SitichkoXmlParser.Parse(finfo);
+
+                                // запись в бд
+
+                                File.Delete(filepath);
+                                test.Project = new Project { Id = State[id].ProjectId }; // TODO: присвоение id project для каждого теста
+
+                                await AddTests.Write(xmltests); // TODO: добавить переменную AddTests
+                                await client.SendTextMessageAsync(id, $"готово");
+                                State[id].result.Answers = new List<Answer>();
+                                var _tests = await getTestPage.Get(new TestPageDto { pageSet = new PageDto { countElementsInPage = set.countElementsInPage, startPage = 0 }, projectId = State[id].ProjectId });
+                                await ViewTests(client, id, _tests);
+
+                                return;
                             }
                             else
                             {
@@ -342,6 +355,7 @@ namespace TelegramBot
                         }
                         else
                             await client.SendTextMessageAsync(id, "ошибка: файл не существует");
+
                     }
                     catch (Exception ex)
                     {

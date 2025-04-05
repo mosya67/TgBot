@@ -14,64 +14,85 @@ namespace XmlParser
         public static List<Test> Parse(FileInfo fileInfo)
         {
             var dtos = new List<Test>();
+            var tmp = new temp();
             XmlDocument xDoc = new XmlDocument();
             xDoc.Load(fileInfo.FullName);
-
+            Dictionary<long, questionTemp> qtmp = new Dictionary<long, questionTemp>();
             // получим корневой элемент
             XmlElement xRoot = xDoc.DocumentElement;
             if (xRoot != null)
             {
-                foreach (XmlElement xnode in xRoot)
+                // цикл 1
+                foreach (XmlElement xnode in xRoot) // checklist 
                 {
-                    foreach (XmlNode tempnode in xnode.ChildNodes)
+                    if (xnode.Name == "checklist_group")
+                        continue;
+
+                    // цикл 2
+                    foreach (XmlNode itemnode in xnode.ChildNodes) // item 0
                     {
                         var test = new Test();
-                        foreach (XmlNode childnode in tempnode.ChildNodes)
+                        
+                        // цикл 3
+                        foreach (XmlNode childnode in itemnode.ChildNodes) // id
                         {
-                            if (childnode.Name == "id")
+                            if (xnode.Name == "checklist")
                             {
-                                // TODO
+                                if (childnode.Name == "id")
+                                {
+                                    tmp.test_id = long.Parse(childnode.InnerText);
+                                }
+                                else if (childnode.Name == "name")
+                                {
+                                    test.Name = childnode.InnerText;
+                                }
+                                else if (childnode.Name == "description")
+                                {
+                                    test.Comment = childnode.InnerText;
+                                }
                             }
-                            else if (childnode.Name == "project_id")
+                            else if (xnode.Name == "checklist_option") // внутренности чек-листов (вопрос\ож и т.д.)
                             {
-                                // TODO
-                            }
-                            else if (childnode.Name == "name")
-                            {
-                                test.Name = childnode.InnerText;
-                                test.
-                            }
-                            else if (childnode.Name == "description")
-                            {
-                                test.Comment = childnode.InnerText;
-                            }
-                            else if (childnode.Name == "abbreviation")
-                            {
-                                // TODO
-                            }
-                            else if (childnode.Name == "regularity_id")
-                            {
-                                // TODO
-                            }
-                            else if (childnode.Name == "completed")
-                            {
-                                // TODO
-                            }
-                        }
-                    }
+                                if (childnode.Name == "id") // id вопроса
+                                {
+                                    tmp.question_id = long.Parse(childnode.InnerText);
+                                    qtmp.Add(tmp.question_id, new questionTemp());
+                                }
+                                else if (childnode.Name == "action") // вопрос
+                                {
+                                    qtmp[tmp.question_id].Question = childnode.InnerText;
+                                }
+                                else if (childnode.Name == "result") // ожидаемый результат
+                                {
+                                    qtmp[tmp.question_id].ExpectedResult = childnode.InnerText;
+                                    dtos.Add(test);
+                                }
+                            }// конец цикла 3
+                            
+                        }// конец цикла 2
+                        
+                    }// конец цикла 1
+                    
                 }
+
+
             }
+
+            return dtos;
         }
     }
 
-    internal class checklistDto
+    internal class temp
     {
-        public long id;
-        public long project_id;
+        public long test_id;
         public string name;
+        public long question_id;
         public string description;
         public string abbreviation;
-        public int regularity_id;
-        public int completed;
+    }
+    internal class questionTemp
+    {
+        public string Question { get; set; }
+        public string ExpectedResult { get; set; }
     }
 }
